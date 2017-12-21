@@ -12,7 +12,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
 
     //URL for loading into WebView
-    private final String COMMENTS_URL = "https://test.vuukle.com/widgets/index.aspx?url=http%3A%2F%2Fsmalltester.tech%2Funcategorized%2Fpost-6%2F&apiKey=912921de-df2f-4f07-971c-b47566ef369e&articleId=18&d=false&tags=Uncategorized&title=Post%206&hideArticles=false&custom_text=&filter_tag=undefined&lang=en&ga=&color=&c=1&l_d=false&maxChars=&img=&refHost=test.vuukle.com&host=smalltester.tech&authors=JTVCJTdCJTIybmFtZSUyMjolMjJhZG1pbiUyMiwlMjJlbWFpbCUyMjolMjJsZXN1a2syQGdtYWlsLmNvbSUyMiU3RCU1RA==&commentsToLoad=&emotesEnabled=true&vuukleDiv=vuukle_div&localization_text=&toxicityLimit=&articlesProtocol=http&gr=false&darkMode=false&vv=176";
+    private final String COMMENTS_URL = "https://cdn.vuukle.com/widgets/index.html?apiKey=c7368a34-dac3-4f39-9b7c-b8ac2a2da575&darkMode=false&host=smalltester.000webhostapp.com&articleId=381&img=https://smalltester.000webhostapp.com/wp-content/uploads/2017/10/wallhaven-303371-825x510.jpg&title=New post 22&url=https://smalltester.000webhostapp.com/2017/12/new-post-22&emotesEnabled=true&firstImg=&secondImg=&thirdImg=&fourthImg=&fifthImg=&sixthImg=&refHost=smalltester.000webhostapp.com&authors=JTIySlRWQ0pUZENKVEl5Ym1GdFpTVXlNam9sTWpBbE1qSmhaRzFwYmlVeU1pd2xNakFsTWpKbGJXRnBiQ1V5TWpvbE1qSWxNaklzSlRJeWRIbHdaU1V5TWpvbE1qQWxNakpwYm5SbGNtNWhiQ1V5TWlVM1JDVTFSQT09JTIy&tags=&lang=en&l_d=false&totWideImg=false&articlesProtocol=http&color=108ee9&hideArticles=false&d=false&maxChars=3000&commentsToLoad=5&toxicityLimit=80&gr=false&customText=%7B%7D&hideCommentBox=false";
 
     //WebView
     private WebView mWebViewComments;
