@@ -111,15 +111,15 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
 
     //URL for loading into WebView
-    private final String COMMENTS\_URL = "http://test.vuukle.com/widgets/index.aspx?uri=http%3A%2F%2Findiatoday.intoday.in%2Fstory%2Flive-satya-nadella-india-today-conclave-next-2017%2F1%2F1083875.html&amp;id=dc34b5cc-453d-468a-96ae-075a66cd9eb7&amp;bizUniqueId=story\_1083875&amp;d=0&amp;t=India%20Today%20Conclave%20Next%202017%2C%20news%2C%20story&amp;h=India%20Today%20Conclave%20Next%202017%20LIVE%3A%20Industry%20leaders%20discuss%20the%20maturing%20of%20Internet%20of%20Things%20%3A%20India%20Today%20Conclave%20Next%202017%2C%20News%20-%20India%20Today&amp;stories\_time=&amp;custom\_text=&amp;filter\_tag=undefined&amp;l=&amp;ga=UA-795349-17&amp;col=d00b26&amp;c=1&amp;l\_d=1&amp;cl=&amp;img=http%3A%2F%2Fmedia2.intoday.in%2Findiatoday%2Fimages%2Fstories%2Fiot-for-story\_647\_110717032238.jpg&amp;refHost=indiatoday.intoday.in&amp;host=indiatoday.intoday.in&amp;auth=JTVCJTdCJTIwJTIybmFtZSUyMjolMjAlMjJJbmRpYVRvZGF5LmluJTIwJTIyLCUyMCUyMCUyMCUyMmVtYWlsJTIyOiUyMCUyMmRlc2staXRnZEBpbnRvZGF5LmNvbSUyMCUyMiwlMjAlMjAlMjAlMjJ0eXBlJTIyOiUyMCUyMkludGVybmFsJTIwJTIyJTdEJTVE&amp;cc=&amp;emote=1&amp;vuukle\_div=vuukle\_div&amp;localization\_text=&amp;toxic\_threshold=&amp;gr=false&amp;vv=176";
+    private final String COMMENTS\_URL = "https://cdn.vuukle.com/widgets/index.html?apiKey=c7368a34-dac3-4f39-9b7c-b8ac2a2da575&host=smalltester.000webhostapp.com&articleId=381&img=https://smalltester.000webhostapp.com/wp-content/uploads/2017/10/wallhaven-303371-825x510.jpg&title=Newpost&url=https://smalltester.000webhostapp.com/2017/12/new-post-22#1";
 
     //WebView
     private WebView mWebViewComments;
 
     //login name
-    String name = "Ross";
+    String name = "Alex";
     //login email
-    String email = "email@sda";
+    String email = "email@test.com";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
