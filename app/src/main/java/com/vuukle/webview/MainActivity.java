@@ -1,5 +1,7 @@
 package com.vuukle.webview;
 
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -87,14 +89,14 @@ public class MainActivity extends AppCompatActivity {
                 popup.getSettings().setSupportMultipleWindows(true);
                 popup.setLayoutParams(view.getLayoutParams());
                 popup.getSettings().setUserAgentString(popup.getSettings().getUserAgentString().replace("; wv", ""));
-
-
+                final String[] urlLast = {""};
                 popup.setWebViewClient(new WebViewClient() {
                     @Override
                     public boolean shouldOverrideUrlLoading(WebView view, String url) {
                         if (url.contains(AUTH) || url.contains(CONSENT)) {
                             Log.d("openWebView", "open vebView 2" + url);
                             popup.loadUrl(url);
+                            checkConsent(url);
                         } else {
                             Log.d("openWebView", "open vebView 1" + url);
                             mWebViewComments.loadUrl(url);
@@ -103,10 +105,22 @@ public class MainActivity extends AppCompatActivity {
                         }
                         return true;
                     }
+
+                    private void checkConsent(String url) {
+                        if (urlLast[0].equals(url)) {
+                            mContainer.removeView(popup);
+                            popup.loadUrl("");
+                        } else {
+                            mWebViewComments.reload();
+                            urlLast[0] = url;
+                        }
+                    }
+
                 });
                 popup.setWebChromeClient(new WebChromeClient() {
                     @Override
                     public void onCloseWindow(WebView window) {
+                        super.onCloseWindow(window);
                         mContainer.removeView(window);
                     }
                 });
