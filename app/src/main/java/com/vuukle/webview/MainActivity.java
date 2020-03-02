@@ -1,5 +1,6 @@
 package com.vuukle.webview;
 
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -26,10 +27,16 @@ public class MainActivity extends AppCompatActivity {
     private WebView mWebViewComments;
     private FrameLayout mContainer;
 
+    //Constant
+    private static final String AUTH = "auth";
+    private static final String CONSENT = "consent";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            WebView.setWebContentsDebuggingEnabled(true);
+        }
         //initialising views
         setContentView(R.layout.activity_main);
         mWebViewComments = findViewById(R.id.activity_main_webview_comments);
@@ -85,9 +92,11 @@ public class MainActivity extends AppCompatActivity {
                 popup.setWebViewClient(new WebViewClient() {
                     @Override
                     public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                        if (url.contains("auth")) {
+                        if (url.contains(AUTH) || url.contains(CONSENT)) {
+                            Log.d("openWebView", "open vebView 2" + url);
                             popup.loadUrl(url);
                         } else {
+                            Log.d("openWebView", "open vebView 1" + url);
                             mWebViewComments.loadUrl(url);
                             mContainer.removeView(popup);
                             return false;
