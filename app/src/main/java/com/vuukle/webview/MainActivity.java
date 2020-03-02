@@ -139,11 +139,23 @@ public class MainActivity extends AppCompatActivity {
                 //Clicked url
                 Log.d(TAG, "Clicked url: " + url);
 
-                //Lets signInUser whenever url is clicked just for sample
-                view.loadUrl(url);
-
+                if (url.contains("mailto:to")) {
+                    openEmail(url.replace("%20", " "));
+                } else {
+                    //Lets signInUser whenever url is clicked just for sample
+                    if (!url.contains("whatsapp://send/"))
+                        view.loadUrl(url);
+                }
                 //if u use super() it will load url into webview
                 return true;
+            }
+
+            private void openEmail(String email) {
+                Intent emailIntent = new Intent(Intent.ACTION_SENDTO, Uri.fromParts(
+                        "mailto", "", null));
+                emailIntent.putExtra(Intent.EXTRA_SUBJECT, email.substring(email.indexOf("subject=") + 8, email.indexOf("&body")));
+                emailIntent.putExtra(Intent.EXTRA_TEXT, email.substring(email.indexOf("body=") + 5));
+                startActivity(Intent.createChooser(emailIntent, null));
             }
         });
     }
