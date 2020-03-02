@@ -19,7 +19,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
 
     //URL for loading into WebView
-    private final String COMMENTS_URL = "https://cdn.vuukle.com/amp.html?apiKey=c7368a34-dac3-4f39-9b7c-b8ac2a2da575&host=smalltester.000webhostapp.com&id=381&img=https://smalltester.000webhostapp.com/wp-content/uploads/2017/10/wallhaven-303371-825x510.jpg&title=Newpost&url=https://smalltester.000webhostapp.com/2017/12/new-post-22#1";
+    private final String COMMENTS_URL = "https://cdntest.vuukle.com/amp.html?apiKey=c7368a34-dac3-4f39-9b7c-b8ac2a2da575&host=smalltester.000webhostapp.com&id=381&img=https://smalltester.000webhostapp.com/wp-content/uploads/2017/10/wallhaven-303371-825x510.jpg&title=Newpost&url=https://smalltester.000webhostapp.com/2017/12/new-post-22#1";
     //login name
     String name = "Alex";
     //login email
@@ -36,9 +36,10 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-            WebView.setWebContentsDebuggingEnabled(true);
-        }
+        // debug test webView
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+//            WebView.setWebContentsDebuggingEnabled(true);
+//        }
         //initialising views
         setContentView(R.layout.activity_main);
         mWebViewComments = findViewById(R.id.activity_main_webview_comments);
@@ -56,7 +57,7 @@ public class MainActivity extends AppCompatActivity {
         if (popup != null && popup.getParent() != null) {
             mContainer.removeView(popup);
             popup = null;
-            mWebViewComments.reload();
+            //       mWebViewComments.reload();
         } else {
             mWebViewComments.goBack();
         }
@@ -95,13 +96,12 @@ public class MainActivity extends AppCompatActivity {
                     public boolean shouldOverrideUrlLoading(WebView view, String url) {
                         if (url.contains(AUTH) || url.contains(CONSENT)) {
                             Log.d("openWebView", "open vebView 2" + url);
-                            popup.loadUrl(url);
+                            if(popup!=null)
+                                popup.loadUrl(url);
                             checkConsent(url);
                         } else {
                             Log.d("openWebView", "open vebView 1" + url);
-                            mWebViewComments.loadUrl(url);
-                            mContainer.removeView(popup);
-                            return false;
+                            popup.loadUrl(url);
                         }
                         return true;
                     }
