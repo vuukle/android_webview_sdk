@@ -105,8 +105,8 @@ public class MainActivity extends AppCompatActivity {
                                 popup.loadUrl(url);
                             checkConsent(url);
                         } else {
-                            Log.d("openWebView", "open vebView 1" + url);
 
+                            Log.d("openWebView", "open vebView 1" + url);
                             if (url.contains("msg_url")) {
                                 openApp(url);
                             } else if (url.contains("facebook") || url.contains("twitter") || url.contains("telegram")) {
@@ -159,6 +159,7 @@ public class MainActivity extends AppCompatActivity {
                 } else {
                     //Lets signInUser whenever url is clicked just for sample
                     openWhatsApp(url, view);
+                    openMessenger(url);
                 }
                 //if u use super() it will load url into webview
                 return true;
@@ -169,9 +170,27 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void openWhatsApp(String url, WebView view) {
-        if (!url.contains("whatsapp://send"))
+        if (!url.contains("whatsapp://send") && !url.contains("fb-messenger"))
             view.loadUrl(url);
-        else openApp("https://api.whatsapp.com" + url.substring(url.indexOf("://") + 2));
+        else if (url.contains("whatsapp://send"))
+            openApp("https://api.whatsapp.com" + url.substring(url.indexOf("://") + 2));
+    }
+
+    private void openMessenger(String url) {
+        if (url.contains("fb-messenger")){
+            Intent sendIntent = new Intent();
+            sendIntent.setAction(Intent.ACTION_SEND);
+            sendIntent
+                    .putExtra(Intent.EXTRA_TEXT,
+                            url.substring(url.indexOf("?link=") + 6));
+            sendIntent.setType("text/plain");
+            sendIntent.setPackage("com.facebook.orca");
+            try {
+                startActivity(sendIntent);
+            }
+            catch (android.content.ActivityNotFoundException ex) {
+            }
+        }
     }
 
     private void openEmail(String email) {
