@@ -2,9 +2,7 @@ package com.vuukle.webview;
 
 import android.content.Intent;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
 import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -56,7 +54,7 @@ public class MainActivity extends AppCompatActivity {
     public void onBackPressed() {
         if (popup != null && popup.getParent() != null) {
             mContainer.removeView(popup);
-            popup = null;
+            popup.destroy();
             //       mWebViewComments.reload();
         } else {
             mWebViewComments.goBack();
@@ -96,12 +94,18 @@ public class MainActivity extends AppCompatActivity {
                     public boolean shouldOverrideUrlLoading(WebView view, String url) {
                         if (url.contains(AUTH) || url.contains(CONSENT)) {
                             Log.d("openWebView", "open vebView 2" + url);
-                            if(popup!=null)
+                            if (popup != null)
                                 popup.loadUrl(url);
                             checkConsent(url);
                         } else {
                             Log.d("openWebView", "open vebView 1" + url);
-                            popup.loadUrl(url);
+                            if (url.contains("facebook") || url.contains("twitter")) {
+                                popup.loadUrl(url);
+                            } else {
+                                mWebViewComments.loadUrl(url);
+                                mContainer.removeView(popup);
+                                return false;
+                            }
                         }
                         return true;
                     }
@@ -109,7 +113,7 @@ public class MainActivity extends AppCompatActivity {
                     private void checkConsent(String url) {
                         if (urlLast[0].equals(url)) {
                             mContainer.removeView(popup);
-                            popup.loadUrl("");
+                            popup.destroy();
                         } else {
                             mWebViewComments.reload();
                             urlLast[0] = url;
