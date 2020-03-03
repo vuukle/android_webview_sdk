@@ -2,11 +2,13 @@ package com.vuukle.webview;
 
 import android.content.Intent;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.webkit.ConsoleMessage;
+import android.webkit.CookieManager;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -46,6 +48,11 @@ public class MainActivity extends AppCompatActivity {
         //initialising webview
         configWebView();
 
+        //cookie
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            CookieManager.getInstance().setAcceptThirdPartyCookies(mWebViewComments, true);
+        } else
+            CookieManager.getInstance().setAcceptCookie(true);
         //load url to display in webview
         mWebViewComments.loadUrl(COMMENTS_URL);
     }
