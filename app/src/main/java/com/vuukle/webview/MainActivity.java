@@ -106,12 +106,16 @@ public class MainActivity extends AppCompatActivity {
                             checkConsent(url);
                         } else {
                             Log.d("openWebView", "open vebView 1" + url);
-                            if (url.contains("facebook") || url.contains("twitter")) {
+
+                            if (url.contains("msg_url")) {
+                                openApp(url);
+                            } else if (url.contains("facebook") || url.contains("twitter") || url.contains("telegram")) {
                                 popup.loadUrl(url);
                             } else {
                                 mWebViewComments.loadUrl(url);
                                 mContainer.removeView(popup);
                                 return false;
+
                             }
                         }
                         return true;
@@ -150,24 +154,36 @@ public class MainActivity extends AppCompatActivity {
                 //Clicked url
                 Log.d(TAG, "Clicked url: " + url);
 
-                if (url.contains("mailto:to")) {
+                if (url.contains("mailto:to") || url.contains("mailto:")) {
                     openEmail(url.replace("%20", " "));
                 } else {
                     //Lets signInUser whenever url is clicked just for sample
-                    if (!url.contains("whatsapp://send/"))
-                        view.loadUrl(url);
+                    openWhatsApp(url, view);
                 }
                 //if u use super() it will load url into webview
                 return true;
             }
 
-            private void openEmail(String email) {
-                Intent emailIntent = new Intent(Intent.ACTION_SENDTO, Uri.fromParts(
-                        "mailto", "", null));
-                emailIntent.putExtra(Intent.EXTRA_SUBJECT, email.substring(email.indexOf("subject=") + 8, email.indexOf("&body")));
-                emailIntent.putExtra(Intent.EXTRA_TEXT, email.substring(email.indexOf("body=") + 5));
-                startActivity(Intent.createChooser(emailIntent, null));
-            }
+
         });
+    }
+
+    private void openWhatsApp(String url, WebView view) {
+        if (!url.contains("whatsapp://send"))
+            view.loadUrl(url);
+        else openApp("https://api.whatsapp.com" + url.substring(url.indexOf("://") + 2));
+    }
+
+    private void openEmail(String email) {
+        Intent emailIntent = new Intent(Intent.ACTION_SENDTO, Uri.fromParts(
+                "mailto", "", null));
+        emailIntent.putExtra(Intent.EXTRA_SUBJECT, email.substring(email.indexOf("subject=") + 8, email.indexOf("&body")));
+        emailIntent.putExtra(Intent.EXTRA_TEXT, email.substring(email.indexOf("body=") + 5));
+        startActivity(Intent.createChooser(emailIntent, null));
+    }
+
+    private void openApp(String url) {
+        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+        startActivity(intent);
     }
 }
