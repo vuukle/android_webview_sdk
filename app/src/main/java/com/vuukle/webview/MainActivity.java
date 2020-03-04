@@ -1,21 +1,34 @@
 package com.vuukle.webview;
 
+import android.app.AlertDialog;
+import android.content.ActivityNotFoundException;
+import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Message;
+import android.provider.MediaStore;
+import android.support.v4.content.FileProvider;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.webkit.ConsoleMessage;
 import android.webkit.CookieManager;
+import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
+import android.widget.Toast;
 
 import com.vuukle.webview.utils.OpenSite;
+
+import java.io.File;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
@@ -34,6 +47,11 @@ public class MainActivity extends AppCompatActivity {
     //Constant
     public static final String AUTH = "auth";
     public static final String CONSENT = "consent";
+
+    private static final int REQUEST_SELECT_FILE = 1021;
+    private ValueCallback<Uri[]> uploadMessage;
+    private ValueCallback<Uri> mUploadMessage;
+    public final static int FILE_CHOOSER_RESULT_CODE = 1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -97,8 +115,31 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    protected void onActivityResult(int requestCode, int resultCode, Intent intent) {
 
-    WebChromeClient webChromeClient=new WebChromeClient(){
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            if (requestCode == REQUEST_SELECT_FILE) {
+                if (uploadMessage == null)
+                    return;
+                if(intent==null){
+                    Intent intent1=new Intent();
+                    intent1.setData(imageUri);
+                    uploadMessage.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(resultCode, intent1));
+                }else
+                uploadMessage.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(resultCode, intent));
+                uploadMessage = null;
+            }
+        } else if (requestCode == FILE_CHOOSER_RESULT_CODE) {
+            if (null == mUploadMessage)
+                return;
+            Uri result = intent == null || resultCode != MainActivity.RESULT_OK ? null : intent.getData();
+            mUploadMessage.onReceiveValue(result);
+            mUploadMessage = null;
+        }
+
+    }
+
+    private WebChromeClient webChromeClient = new WebChromeClient() {
         @Override
         public boolean onConsoleMessage(ConsoleMessage consoleMessage) {
             Log.d("consolejs", consoleMessage.message());
@@ -170,5 +211,77 @@ public class MainActivity extends AppCompatActivity {
 
             return true;
         }
+
+        // For Lollipop 5.0+ Devices
+        public boolean onShowFileChooser(WebView mWebView, ValueCallback<Uri[]> filePathCallback, WebChromeClient.FileChooserParams fileChooserParams) {
+            if (uploadMessage != null) {
+                uploadMessage.onReceiveValue(null);
+                uploadMessage = null;
+            }
+            uploadMessage = filePathCallback;
+            selectImage();
+//           Intent intent = new Intent();
+//           intent.setType("image/*");
+//           intent.setAction(Intent.ACTION_GET_CONTENT);
+//           try
+//           {
+//               startActivityForResult(intent, REQUEST_SELECT_FILE);
+//           } catch (ActivityNotFoundException e)
+//           {
+//               uploadMessage = null;
+//               return false;
+//           }
+            return true;
+        }
     };
+    private String FORMAT_TIME = "yyyyMMddHHmmss";
+    private String FILE_EXTENSION = ".jpg";
+    private String FILE_PROVIDER = "com.vuukle.webview.android.fileprovider";
+    private Uri imageUri;
+    private File getPictureFile(Context contex) throws IOException {
+        String timeStamp = new SimpleDateFormat(FORMAT_TIME).format(new Date());
+        String pictureFile = "VUUKLE" + timeStamp;
+        File storageDir = contex.getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+        File image = File.createTempFile(pictureFile, FILE_EXTENSION, storageDir);
+        String pictureFilePath = image.getAbsolutePath();
+        return image;
+    }
+
+    public void selectImage() {
+        final CharSequence[] options = {getString(R.string.take_photo), getString(R.string.choose_from_gallery), getString(R.string.cancel)};
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle(getString(R.string.choose_your_profile_picture));
+
+        builder.setItems(options, (dialog, item) -> {
+
+            if (options[item].equals(getString(R.string.take_photo))) {
+                Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+                File photo = null;
+                try {
+                    photo = getPictureFile(this);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                 imageUri = FileProvider.getUriForFile(
+                        MainActivity.this,
+                        FILE_PROVIDER,
+                        photo);
+                intent.putExtra(MediaStore.EXTRA_OUTPUT,
+                        imageUri);
+                startActivityForResult(intent, REQUEST_SELECT_FILE);
+            } else if (options[item].equals(getString(R.string.choose_from_gallery))) {
+                try {
+                    Intent pickPhoto = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+                    startActivityForResult(pickPhoto, REQUEST_SELECT_FILE);
+                } catch (ActivityNotFoundException e) {
+                    uploadMessage = null;
+                }
+            } else if (options[item].equals(getString(R.string.cancel))) {
+                dialog.dismiss();
+            }
+        });
+        builder.show();
+    }
+
 }
