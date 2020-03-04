@@ -15,6 +15,8 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
 
+import com.vuukle.webview.utils.OpenSite;
+
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
 
@@ -24,14 +26,14 @@ public class MainActivity extends AppCompatActivity {
     String name = "Alex";
     //login email
     String email = "email@test.com";
-    private WebView popup;
+    public WebView popup;
     //WebView
-    private WebView mWebViewComments;
-    private FrameLayout mContainer;
-
+    public WebView mWebViewComments;
+    public FrameLayout mContainer;
+    public OpenSite openSite;
     //Constant
-    private static final String AUTH = "auth";
-    private static final String CONSENT = "consent";
+    public static final String AUTH = "auth";
+    public static final String CONSENT = "consent";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,7 +46,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         mWebViewComments = findViewById(R.id.activity_main_webview_comments);
         mContainer = findViewById(R.id.container);
-
+        openSite = new OpenSite(this);
         //initialising webview
         configWebView();
 
@@ -59,9 +61,9 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
-        if (popup != null && popup.getParent() != null) {
+        if (this.popup != null && this.popup.getParent() != null) {
             mContainer.removeView(popup);
-            popup.destroy();
+            this.popup.destroy();
             //       mWebViewComments.reload();
         } else {
             mWebViewComments.goBack();
@@ -75,79 +77,7 @@ public class MainActivity extends AppCompatActivity {
         mWebViewComments.getSettings().setDomStorageEnabled(true);
         mWebViewComments.getSettings().setSupportMultipleWindows(true);
 
-        mWebViewComments.setWebChromeClient(new WebChromeClient() {
-            @Override
-            public boolean onConsoleMessage(ConsoleMessage consoleMessage) {
-                Log.d("consolejs", consoleMessage.message());
-                //Listening for console message that contains "Comments initialized!" string
-                if (consoleMessage.message().contains("Comments initialized!")) {
-                    //signInUser(name, email) - javascript function implemented on a page
-                    mWebViewComments.loadUrl("javascript:signInUser('" + name + "', '" + email + "')");
-                }
-                return super.onConsoleMessage(consoleMessage);
-            }
-
-            @Override
-            public boolean onCreateWindow(final WebView view, boolean isDialog, boolean isUserGesture, Message resultMsg) {
-                popup = new WebView(MainActivity.this);
-                popup.getSettings().setJavaScriptEnabled(true);
-                popup.getSettings().setPluginState(WebSettings.PluginState.ON);
-                popup.getSettings().setSupportMultipleWindows(true);
-                popup.setLayoutParams(view.getLayoutParams());
-                popup.getSettings().setUserAgentString(popup.getSettings().getUserAgentString().replace("; wv", ""));
-                final String[] urlLast = {""};
-                popup.setWebViewClient(new WebViewClient() {
-                    @Override
-                    public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                        if (url.contains(AUTH) || url.contains(CONSENT)) {
-                            Log.d("openWebView", "open vebView 2" + url);
-                            if (popup != null)
-                                popup.loadUrl(url);
-                            checkConsent(url);
-                        } else {
-
-                            Log.d("openWebView", "open vebView 1" + url);
-                            if (url.contains("msg_url")) {
-                                openApp(url);
-                            } else if (url.contains("facebook") || url.contains("twitter") || url.contains("telegram")) {
-                                popup.loadUrl(url);
-                            } else {
-                                mWebViewComments.loadUrl(url);
-                                mContainer.removeView(popup);
-                                return false;
-
-                            }
-                        }
-                        return true;
-                    }
-
-                    private void checkConsent(String url) {
-                        if (urlLast[0].equals(url)) {
-                            mContainer.removeView(popup);
-                            popup.destroy();
-                        } else {
-                            mWebViewComments.reload();
-                            urlLast[0] = url;
-                        }
-                    }
-
-                });
-                popup.setWebChromeClient(new WebChromeClient() {
-                    @Override
-                    public void onCloseWindow(WebView window) {
-                        super.onCloseWindow(window);
-                        mContainer.removeView(window);
-                    }
-                });
-                mContainer.addView(popup);
-
-                WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
-                transport.setWebView(popup);
-                resultMsg.sendToTarget();
-
-                return true;
-            }
-        });
+        mWebViewComments.setWebChromeClient(webChromeClient);
         mWebViewComments.setWebViewClient(new WebViewClient() {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, final String url) {
@@ -155,54 +85,90 @@ public class MainActivity extends AppCompatActivity {
                 Log.d(TAG, "Clicked url: " + url);
 
                 if (url.contains("mailto:to") || url.contains("mailto:")) {
-                    openEmail(url.replace("%20", " "));
+                    openSite.openEmail(url.replace("%20", " "));
                 } else {
                     //Lets signInUser whenever url is clicked just for sample
-                    openWhatsApp(url, view);
-                    openMessenger(url);
+                    openSite.openWhatsApp(url, view);
+                    openSite.openMessenger(url);
                 }
                 //if u use super() it will load url into webview
                 return true;
             }
-
-
         });
     }
 
-    private void openWhatsApp(String url, WebView view) {
-        if (!url.contains("whatsapp://send") && !url.contains("fb-messenger"))
-            view.loadUrl(url);
-        else if (url.contains("whatsapp://send"))
-            openApp("https://api.whatsapp.com" + url.substring(url.indexOf("://") + 2));
-    }
 
-    private void openMessenger(String url) {
-        if (url.contains("fb-messenger")){
-            Intent sendIntent = new Intent();
-            sendIntent.setAction(Intent.ACTION_SEND);
-            sendIntent
-                    .putExtra(Intent.EXTRA_TEXT,
-                            url.substring(url.indexOf("?link=") + 6));
-            sendIntent.setType("text/plain");
-            sendIntent.setPackage("com.facebook.orca");
-            try {
-                startActivity(sendIntent);
+    WebChromeClient webChromeClient=new WebChromeClient(){
+        @Override
+        public boolean onConsoleMessage(ConsoleMessage consoleMessage) {
+            Log.d("consolejs", consoleMessage.message());
+            //Listening for console message that contains "Comments initialized!" string
+            if (consoleMessage.message().contains("Comments initialized!")) {
+                //signInUser(name, email) - javascript function implemented on a page
+                mWebViewComments.loadUrl("javascript:signInUser('" + name + "', '" + email + "')");
             }
-            catch (android.content.ActivityNotFoundException ex) {
-            }
+            return super.onConsoleMessage(consoleMessage);
         }
-    }
 
-    private void openEmail(String email) {
-        Intent emailIntent = new Intent(Intent.ACTION_SENDTO, Uri.fromParts(
-                "mailto", "", null));
-        emailIntent.putExtra(Intent.EXTRA_SUBJECT, email.substring(email.indexOf("subject=") + 8, email.indexOf("&body")));
-        emailIntent.putExtra(Intent.EXTRA_TEXT, email.substring(email.indexOf("body=") + 5));
-        startActivity(Intent.createChooser(emailIntent, null));
-    }
+        @Override
+        public boolean onCreateWindow(final WebView view, boolean isDialog, boolean isUserGesture, Message resultMsg) {
+            popup = new WebView(MainActivity.this);
+            popup.getSettings().setJavaScriptEnabled(true);
+            popup.getSettings().setPluginState(WebSettings.PluginState.ON);
+            popup.getSettings().setSupportMultipleWindows(true);
+            popup.setLayoutParams(view.getLayoutParams());
+            popup.getSettings().setUserAgentString(popup.getSettings().getUserAgentString().replace("; wv", ""));
+            final String[] urlLast = {""};
+            popup.setWebViewClient(new WebViewClient() {
+                @Override
+                public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                    if (url.contains(AUTH) || url.contains(CONSENT)) {
+                        Log.d("openWebView", "open vebView 2" + url);
+                        if (popup != null)
+                            popup.loadUrl(url);
+                        checkConsent(url);
+                    } else {
 
-    private void openApp(String url) {
-        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-        startActivity(intent);
-    }
+                        Log.d("openWebView", "open vebView 1" + url);
+                        if (url.contains("msg_url")) {
+                            openSite.openApp(url);
+                        } else if (url.contains("facebook") || url.contains("twitter") || url.contains("telegram")) {
+                            popup.loadUrl(url);
+                        } else {
+                            mWebViewComments.loadUrl(url);
+                            mContainer.removeView(popup);
+                            return false;
+
+                        }
+                    }
+                    return true;
+                }
+
+                private void checkConsent(String url) {
+                    if (urlLast[0].equals(url)) {
+                        mContainer.removeView(popup);
+                        popup.destroy();
+                    } else {
+                        mWebViewComments.reload();
+                        urlLast[0] = url;
+                    }
+                }
+
+            });
+            popup.setWebChromeClient(new WebChromeClient() {
+                @Override
+                public void onCloseWindow(WebView window) {
+                    super.onCloseWindow(window);
+                    mContainer.removeView(window);
+                }
+            });
+            mContainer.addView(popup);
+
+            WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
+            transport.setWebView(popup);
+            resultMsg.sendToTarget();
+
+            return true;
+        }
+    };
 }
