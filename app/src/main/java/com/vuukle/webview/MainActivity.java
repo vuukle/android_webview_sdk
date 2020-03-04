@@ -1,15 +1,20 @@
 package com.vuukle.webview;
 
+import android.Manifest;
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Message;
 import android.provider.MediaStore;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.content.FileProvider;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -23,6 +28,7 @@ import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
 import android.widget.Toast;
 
+import com.vuukle.webview.utils.OpenPhoto;
 import com.vuukle.webview.utils.OpenSite;
 
 import java.io.File;
@@ -47,11 +53,12 @@ public class MainActivity extends AppCompatActivity {
     //Constant
     public static final String AUTH = "auth";
     public static final String CONSENT = "consent";
-
-    private static final int REQUEST_SELECT_FILE = 1021;
+    private OpenPhoto openPhoto = new OpenPhoto();
+    public static final int REQUEST_SELECT_FILE = 1021;
     private ValueCallback<Uri[]> uploadMessage;
     private ValueCallback<Uri> mUploadMessage;
     public final static int FILE_CHOOSER_RESULT_CODE = 1;
+    public final static int CAMERA_PERMISSION = 2;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -116,17 +123,18 @@ public class MainActivity extends AppCompatActivity {
     }
 
     protected void onActivityResult(int requestCode, int resultCode, Intent intent) {
-
+        if (CAMERA_PERMISSION == resultCode && requestCode == Activity.RESULT_OK)
+            openPhoto.selectImage(MainActivity.this);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             if (requestCode == REQUEST_SELECT_FILE) {
                 if (uploadMessage == null)
                     return;
-                if(intent==null){
-                    Intent intent1=new Intent();
-                    intent1.setData(imageUri);
+                if (intent == null) {
+                    Intent intent1 = new Intent();
+                    intent1.setData(openPhoto.getImageUri());
                     uploadMessage.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(resultCode, intent1));
-                }else
-                uploadMessage.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(resultCode, intent));
+                } else
+                    uploadMessage.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(resultCode, intent));
                 uploadMessage = null;
             }
         } else if (requestCode == FILE_CHOOSER_RESULT_CODE) {
@@ -213,75 +221,38 @@ public class MainActivity extends AppCompatActivity {
         }
 
         // For Lollipop 5.0+ Devices
-        public boolean onShowFileChooser(WebView mWebView, ValueCallback<Uri[]> filePathCallback, WebChromeClient.FileChooserParams fileChooserParams) {
+        public boolean onShowFileChooser(WebView mWebView, ValueCallback<Uri[]> filePathCallback, FileChooserParams fileChooserParams) {
             if (uploadMessage != null) {
                 uploadMessage.onReceiveValue(null);
                 uploadMessage = null;
             }
             uploadMessage = filePathCallback;
-            selectImage();
-//           Intent intent = new Intent();
-//           intent.setType("image/*");
-//           intent.setAction(Intent.ACTION_GET_CONTENT);
-//           try
-//           {
-//               startActivityForResult(intent, REQUEST_SELECT_FILE);
-//           } catch (ActivityNotFoundException e)
-//           {
-//               uploadMessage = null;
-//               return false;
-//           }
-            return true;
+
+
+            return openPermission();
+        }
+
+        private boolean openPermission() {
+            if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+                openPhoto.selectImage(MainActivity.this);
+                return true;
+            } else {
+                ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.CAMERA}, CAMERA_PERMISSION);
+                try {
+                    openPhoto.selectImage(MainActivity.this);
+                } catch (Exception e) {
+                }
+                if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+                    openPhoto.selectImage(MainActivity.this);
+                    return true;
+                } else {
+                    uploadMessage = null;
+                    return false;
+                }
+
+            }
         }
     };
-    private String FORMAT_TIME = "yyyyMMddHHmmss";
-    private String FILE_EXTENSION = ".jpg";
-    private String FILE_PROVIDER = "com.vuukle.webview.android.fileprovider";
-    private Uri imageUri;
-    private File getPictureFile(Context contex) throws IOException {
-        String timeStamp = new SimpleDateFormat(FORMAT_TIME).format(new Date());
-        String pictureFile = "VUUKLE" + timeStamp;
-        File storageDir = contex.getExternalFilesDir(Environment.DIRECTORY_PICTURES);
-        File image = File.createTempFile(pictureFile, FILE_EXTENSION, storageDir);
-        String pictureFilePath = image.getAbsolutePath();
-        return image;
-    }
 
-    public void selectImage() {
-        final CharSequence[] options = {getString(R.string.take_photo), getString(R.string.choose_from_gallery), getString(R.string.cancel)};
-
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle(getString(R.string.choose_your_profile_picture));
-
-        builder.setItems(options, (dialog, item) -> {
-
-            if (options[item].equals(getString(R.string.take_photo))) {
-                Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-                File photo = null;
-                try {
-                    photo = getPictureFile(this);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                 imageUri = FileProvider.getUriForFile(
-                        MainActivity.this,
-                        FILE_PROVIDER,
-                        photo);
-                intent.putExtra(MediaStore.EXTRA_OUTPUT,
-                        imageUri);
-                startActivityForResult(intent, REQUEST_SELECT_FILE);
-            } else if (options[item].equals(getString(R.string.choose_from_gallery))) {
-                try {
-                    Intent pickPhoto = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-                    startActivityForResult(pickPhoto, REQUEST_SELECT_FILE);
-                } catch (ActivityNotFoundException e) {
-                    uploadMessage = null;
-                }
-            } else if (options[item].equals(getString(R.string.cancel))) {
-                dialog.dismiss();
-            }
-        });
-        builder.show();
-    }
 
 }
