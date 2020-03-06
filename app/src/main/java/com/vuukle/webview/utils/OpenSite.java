@@ -36,7 +36,7 @@ public class OpenSite {
             try {
                 context.startActivity(sendIntent);
             } catch (android.content.ActivityNotFoundException ex) {
-                context.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=com.google.android.apps.messaging")));
+                context.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=com.facebook.orca")));
 
             }
         }
