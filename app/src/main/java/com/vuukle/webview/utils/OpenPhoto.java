@@ -8,6 +8,7 @@ import android.net.Uri;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.v4.content.FileProvider;
+import android.widget.Toast;
 
 import com.vuukle.webview.MainActivity;
 import com.vuukle.webview.R;
@@ -23,6 +24,7 @@ public class OpenPhoto {
     private String FORMAT_TIME = "yyyyMMddHHmmss";
     private String FILE_EXTENSION = ".jpg";
     private String FILE_PROVIDER = "com.vuukle.webview.android.fileprovider";
+    private String VUUKLE = "VUUKLE";
     private Uri imageUri;
 
     public Uri getImageUri() {
@@ -31,10 +33,9 @@ public class OpenPhoto {
 
     private File getPictureFile(Context contex) throws IOException {
         String timeStamp = new SimpleDateFormat(FORMAT_TIME).format(new Date());
-        String pictureFile = "VUUKLE" + timeStamp;
+        String pictureFile = VUUKLE + timeStamp;
         File storageDir = contex.getExternalFilesDir(Environment.DIRECTORY_PICTURES);
         File image = File.createTempFile(pictureFile, FILE_EXTENSION, storageDir);
-        String pictureFilePath = image.getAbsolutePath();
         return image;
     }
 
@@ -66,6 +67,7 @@ public class OpenPhoto {
                     Intent pickPhoto = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
                     ((MainActivity) context).startActivityForResult(pickPhoto, REQUEST_SELECT_FILE);
                 } catch (ActivityNotFoundException e) {
+                    Toast.makeText(context,"An error has occurred",Toast.LENGTH_SHORT).show();
                 }
             } else if (options[item].equals(context.getString(R.string.cancel))) {
                 dialog.dismiss();

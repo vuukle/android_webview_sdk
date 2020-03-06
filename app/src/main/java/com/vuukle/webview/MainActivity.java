@@ -20,6 +20,7 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
+import android.widget.Toast;
 
 import com.vuukle.webview.utils.OpenPhoto;
 import com.vuukle.webview.utils.OpenSite;
@@ -60,7 +61,7 @@ public class MainActivity extends AppCompatActivity {
         mWebViewComments = findViewById(R.id.activity_main_webview_comments);
         mContainer = findViewById(R.id.container);
         openSite = new OpenSite(this);
-        //initialising webview
+        //initialising webView
         configWebView();
 
         //cookie
@@ -68,7 +69,7 @@ public class MainActivity extends AppCompatActivity {
             CookieManager.getInstance().setAcceptThirdPartyCookies(mWebViewComments, true);
         } else
             CookieManager.getInstance().setAcceptCookie(true);
-        //load url to display in webview
+        //load url to display in webView
         mWebViewComments.loadUrl(COMMENTS_URL);
     }
 
@@ -103,7 +104,7 @@ public class MainActivity extends AppCompatActivity {
                     openSite.openWhatsApp(url, view);
                     openSite.openMessenger(url);
                 }
-                //if u use super() it will load url into webview
+                //if u use super() it will load url into webView
                 return true;
             }
         });
@@ -137,7 +138,7 @@ public class MainActivity extends AppCompatActivity {
     private WebChromeClient webChromeClient = new WebChromeClient() {
         @Override
         public boolean onConsoleMessage(ConsoleMessage consoleMessage) {
-            Log.d("consolejs", consoleMessage.message());
+            Log.d("consoleJs", consoleMessage.message());
             //Listening for console message that contains "Comments initialized!" string
             if (consoleMessage.message().contains("Comments initialized!")) {
                 //signInUser(name, email) - javascript function implemented on a page
@@ -234,6 +235,7 @@ public class MainActivity extends AppCompatActivity {
                 try {
                     openPhoto.selectImage(MainActivity.this);
                 } catch (Exception e) {
+                    Toast.makeText(MainActivity.this, "An error has occurred", Toast.LENGTH_SHORT).show();
                 }
                 if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
                     openPhoto.selectImage(MainActivity.this);
