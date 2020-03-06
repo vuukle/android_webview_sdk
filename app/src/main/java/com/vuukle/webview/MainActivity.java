@@ -2,20 +2,14 @@ package com.vuukle.webview;
 
 import android.Manifest;
 import android.app.Activity;
-import android.app.AlertDialog;
-import android.content.ActivityNotFoundException;
-import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.Message;
-import android.provider.MediaStore;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
-import android.support.v4.content.FileProvider;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.webkit.ConsoleMessage;
@@ -26,15 +20,9 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
-import android.widget.Toast;
 
 import com.vuukle.webview.utils.OpenPhoto;
 import com.vuukle.webview.utils.OpenSite;
-
-import java.io.File;
-import java.io.IOException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
@@ -64,9 +52,9 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         // debug test webView
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-//            WebView.setWebContentsDebuggingEnabled(true);
-//        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            WebView.setWebContentsDebuggingEnabled(true);
+        }
         //initialising views
         setContentView(R.layout.activity_main);
         mWebViewComments = findViewById(R.id.activity_main_webview_comments);
@@ -89,7 +77,6 @@ public class MainActivity extends AppCompatActivity {
         if (this.popup != null && this.popup.getParent() != null) {
             mContainer.removeView(popup);
             this.popup.destroy();
-            //       mWebViewComments.reload();
         } else {
             mWebViewComments.goBack();
         }
@@ -172,22 +159,23 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public boolean shouldOverrideUrlLoading(WebView view, String url) {
                     if (url.contains(AUTH) || url.contains(CONSENT)) {
-                        Log.d("openWebView", "open vebView 2" + url);
+                        Log.d("openWebView", "open vebView 2 " + url);
                         if (popup != null)
                             popup.loadUrl(url);
                         checkConsent(url);
                     } else {
-
-                        Log.d("openWebView", "open vebView 1" + url);
                         if (url.contains("msg_url")) {
+                            Log.d("openWebView", "open app " + url);
                             openSite.openApp(url);
                         } else if (url.contains("facebook") || url.contains("twitter") || url.contains("telegram")) {
+                            Log.d("openWebView", "open vebView 2 " + url);
                             popup.loadUrl(url);
                         } else {
+                            Log.d("openWebView", "open vebView 1 " + url);
                             mWebViewComments.loadUrl(url);
                             mContainer.removeView(popup);
+                            popup.destroy();
                             return false;
-
                         }
                     }
                     return true;
