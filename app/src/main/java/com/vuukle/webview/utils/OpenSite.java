@@ -36,6 +36,8 @@ public class OpenSite {
             try {
                 context.startActivity(sendIntent);
             } catch (android.content.ActivityNotFoundException ex) {
+                context.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=com.google.android.apps.messaging")));
+
             }
         }
     }
@@ -46,7 +48,12 @@ public class OpenSite {
                 "mailto", "", null));
         emailIntent.putExtra(Intent.EXTRA_SUBJECT, url.substring(url.indexOf("subject=") + 8, url.indexOf("&body")));
         emailIntent.putExtra(Intent.EXTRA_TEXT, url.substring(url.indexOf("body=") + 5));
-        context.startActivity(Intent.createChooser(emailIntent, null));
+        try {
+            context.startActivity(Intent.createChooser(emailIntent, null));
+        } catch (android.content.ActivityNotFoundException ex) {
+            context.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=com.google.android.gm")));
+
+        }
     }
 
     private String decodeUrl(String url) {
