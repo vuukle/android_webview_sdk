@@ -164,19 +164,24 @@ public class MainActivity extends AppCompatActivity {
                             popup.loadUrl(url);
                         checkConsent(url);
                     } else {
-                        if (url.contains("msg_url")) {
-                            Log.d("openWebView", "open app " + url);
-                            openSite.openApp(url);
-                        } else if (url.contains("facebook") || url.contains("twitter") || url.contains("telegram")) {
-                            Log.d("openWebView", "open vebView 2 " + url);
-                            popup.loadUrl(url);
-                        } else {
-                            Log.d("openWebView", "open vebView 1 " + url);
-                            mWebViewComments.loadUrl(url);
-                            mContainer.removeView(popup);
-                            popup.destroy();
-                            return false;
-                        }
+                        return selectOpenTab(url);
+                    }
+                    return true;
+                }
+
+                private boolean selectOpenTab(String url) {
+                    if (url.contains("msg_url")) {
+                        Log.d("openWebView", "open app " + url);
+                        openSite.openApp(url);
+                    } else if (url.contains("facebook") || url.contains("twitter") || url.contains("telegram")) {
+                        Log.d("openWebView", "open vebView 2 " + url);
+                        popup.loadUrl(url);
+                    } else {
+                        Log.d("openWebView", "open vebView 1 " + url);
+                        mWebViewComments.loadUrl(url);
+                        mContainer.removeView(popup);
+                        popup.destroy();
+                        return false;
                     }
                     return true;
                 }
