@@ -5,6 +5,9 @@ import android.content.Intent;
 import android.net.Uri;
 import android.webkit.WebView;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+
 public class OpenSite {
     private Context context;
 
@@ -13,6 +16,7 @@ public class OpenSite {
     }
 
     public void openWhatsApp(String url, WebView view) {
+        url = decodeUrl(url);
         if (!url.contains("whatsapp://send") && !url.contains("fb-messenger"))
             view.loadUrl(url);
         else if (url.contains("whatsapp://send"))
@@ -20,6 +24,7 @@ public class OpenSite {
     }
 
     public void openMessenger(String url) {
+        url = decodeUrl(url);
         if (url.contains("fb-messenger")) {
             Intent sendIntent = new Intent();
             sendIntent.setAction(Intent.ACTION_SEND);
@@ -35,12 +40,23 @@ public class OpenSite {
         }
     }
 
-    public void openEmail(String email) {
+    public void openEmail(String url) {
+        url = decodeUrl(url);
         Intent emailIntent = new Intent(Intent.ACTION_SENDTO, Uri.fromParts(
                 "mailto", "", null));
-        emailIntent.putExtra(Intent.EXTRA_SUBJECT, email.substring(email.indexOf("subject=") + 8, email.indexOf("&body")));
-        emailIntent.putExtra(Intent.EXTRA_TEXT, email.substring(email.indexOf("body=") + 5));
+        emailIntent.putExtra(Intent.EXTRA_SUBJECT, url.substring(url.indexOf("subject=") + 8, url.indexOf("&body")));
+        emailIntent.putExtra(Intent.EXTRA_TEXT, url.substring(url.indexOf("body=") + 5));
         context.startActivity(Intent.createChooser(emailIntent, null));
+    }
+
+    private String decodeUrl(String url) {
+        try {
+            url = URLDecoder.decode(url, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+            return url;
+        }
+        return url;
     }
 
     public void openApp(String url) {
