@@ -40,7 +40,9 @@ public class MainActivity extends AppCompatActivity {
     public FrameLayout mContainer;
     public OpenSite openSite;
     //Constant
-    public static final String PRIVACY_POLICY = "https://docs.vuukle.com/privacy-and-policy/";
+    public static final String PRIVACY_POLICY = "https://docs.vuukle.com/";
+    public static final String VUUKLE = "https://vuukle.com/";
+    public static final String BLOG_VUUKLE = "https://blog.vuukle.com/";
     public static final String AUTH = "auth";
     public static final String CONSENT = "consent";
     private OpenPhoto openPhoto = new OpenPhoto();
@@ -97,7 +99,7 @@ public class MainActivity extends AppCompatActivity {
             public boolean shouldOverrideUrlLoading(WebView view, final String url) {
                 //Clicked url
                 Log.d(TAG, "Clicked url: " + url);
-                if (PRIVACY_POLICY.equals(url)) {
+                if (openSite.isOpenSupportInBrowser(url)) {
                     openSite.openPrivacyPolicy(url);
                 } else if (url.contains("mailto:to") || url.contains("mailto:")) {
                     openSite.openEmail(url.replace("%20", " "));
@@ -173,7 +175,10 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 private boolean selectOpenTab(String url) {
-                    if (url.contains("msg_url")) {
+                    if (openSite.isOpenSupportInBrowser(url)) {
+                        openSite.openPrivacyPolicy(url);
+                        return destroyWebView();
+                    } else if (url.contains("msg_url")) {
                         Log.d("openWebView", "open app " + url);
                         openSite.openApp(url);
                     } else if (url.contains("facebook") || url.contains("twitter") || url.contains("telegram")) {
@@ -182,11 +187,15 @@ public class MainActivity extends AppCompatActivity {
                     } else {
                         Log.d("openWebView", "open vebView 1 " + url);
                         mWebViewComments.loadUrl(url);
-                        mContainer.removeView(popup);
-                        popup.destroy();
-                        return false;
+                        return destroyWebView();
                     }
                     return true;
+                }
+
+                private Boolean destroyWebView() {
+                    mContainer.removeView(popup);
+                    popup.destroy();
+                    return false;
                 }
 
                 private void checkConsent(String url) {
@@ -227,6 +236,7 @@ public class MainActivity extends AppCompatActivity {
 
             return openPermission();
         }
+
 
         private boolean openPermission() {
             if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
