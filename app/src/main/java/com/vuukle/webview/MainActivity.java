@@ -40,6 +40,7 @@ public class MainActivity extends AppCompatActivity {
     public FrameLayout mContainer;
     public OpenSite openSite;
     //Constant
+    public static final String PRIVACY_POLICY = "https://docs.vuukle.com/privacy-and-policy/";
     public static final String AUTH = "auth";
     public static final String CONSENT = "consent";
     private OpenPhoto openPhoto = new OpenPhoto();
@@ -96,8 +97,9 @@ public class MainActivity extends AppCompatActivity {
             public boolean shouldOverrideUrlLoading(WebView view, final String url) {
                 //Clicked url
                 Log.d(TAG, "Clicked url: " + url);
-
-                if (url.contains("mailto:to") || url.contains("mailto:")) {
+                if (PRIVACY_POLICY.equals(url)) {
+                    openSite.openPrivacyPolicy(url);
+                } else if (url.contains("mailto:to") || url.contains("mailto:")) {
                     openSite.openEmail(url.replace("%20", " "));
                 } else {
                     //Lets signInUser whenever url is clicked just for sample

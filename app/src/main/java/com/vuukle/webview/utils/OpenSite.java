@@ -42,6 +42,10 @@ public class OpenSite {
         }
     }
 
+    public void openPrivacyPolicy(String url) {
+        context.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
+    }
+
     public void openEmail(String url) {
         url = decodeUrl(url);
         Intent emailIntent = new Intent(Intent.ACTION_SENDTO, Uri.fromParts(
