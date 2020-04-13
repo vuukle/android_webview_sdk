@@ -22,6 +22,7 @@ import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
 import android.widget.Toast;
 
+import com.vuukle.webview.utils.Dialog;
 import com.vuukle.webview.utils.OpenPhoto;
 import com.vuukle.webview.utils.OpenSite;
 
@@ -39,6 +40,7 @@ public class MainActivity extends AppCompatActivity {
     public WebView mWebViewComments;
     public FrameLayout mContainer;
     public OpenSite openSite;
+    public Dialog dialog;
     //Constant
     public static final String PRIVACY_POLICY = "https://docs.vuukle.com/";
     public static final String VUUKLE = "https://vuukle.com/";
@@ -64,6 +66,7 @@ public class MainActivity extends AppCompatActivity {
         mWebViewComments = findViewById(R.id.activity_main_webview_comments);
         mContainer = findViewById(R.id.container);
         openSite = new OpenSite(this);
+        dialog = new Dialog(this);
         //initialising webView
         configWebView();
 
@@ -165,8 +168,10 @@ public class MainActivity extends AppCompatActivity {
                 public boolean shouldOverrideUrlLoading(WebView view, String url) {
                     if (url.contains(AUTH) || url.contains(CONSENT)) {
                         Log.d("openWebView", "open vebView 2 " + url);
-                        if (popup != null)
+                        if (popup != null) {
                             popup.loadUrl(url);
+                            dialog.openDialog(url, popup);
+                        }
                         checkConsent(url);
                     } else {
                         return selectOpenTab(url);
@@ -182,7 +187,8 @@ public class MainActivity extends AppCompatActivity {
                         Log.d("openWebView", "open app " + url);
                         openSite.openApp(url);
                     } else if (url.contains("facebook") || url.contains("twitter") || url.contains("telegram")) {
-                        Log.d("openWebView", "open vebView 2 " + url);
+                        Log.d("openWebView", "open vebView 2.1 " + url);
+                        mContainer.addView(popup);
                         popup.loadUrl(url);
                     } else {
                         Log.d("openWebView", "open vebView 1 " + url);
@@ -200,10 +206,10 @@ public class MainActivity extends AppCompatActivity {
 
                 private void checkConsent(String url) {
                     if (urlLast[0].equals(url)) {
-                        mContainer.removeView(popup);
+                        //   mContainer.removeView(popup);
                         popup.destroy();
                     } else {
-                        mWebViewComments.reload();
+                        // mWebViewComments.reload();
                         urlLast[0] = url;
                     }
                 }
@@ -213,11 +219,12 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void onCloseWindow(WebView window) {
                     super.onCloseWindow(window);
+                    dialog.close();
+                    if (mWebViewComments != null)
+                        mWebViewComments.reload();
                     mContainer.removeView(window);
                 }
             });
-            mContainer.addView(popup);
-
             WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
             transport.setWebView(popup);
             resultMsg.sendToTarget();
@@ -232,8 +239,6 @@ public class MainActivity extends AppCompatActivity {
                 uploadMessage = null;
             }
             uploadMessage = filePathCallback;
-
-
             return openPermission();
         }
 
