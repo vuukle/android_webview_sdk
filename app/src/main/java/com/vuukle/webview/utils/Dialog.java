@@ -3,14 +3,13 @@ package com.vuukle.webview.utils;
 import android.Manifest;
 import android.app.AlertDialog;
 
-import android.content.Context;
+import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.net.Uri;
-import android.net.http.SslCertificate;
 import android.os.Message;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
-import android.util.Log;
+import android.view.KeyEvent;
 import android.view.View;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
@@ -29,11 +28,10 @@ public class Dialog {
     private Boolean openDialog = true;
     private LinearLayout wrapper;
     private WebView popup;
-    private WebView popup1;
+    private WebView webView;
 
     public ValueCallback<Uri[]> uploadMessage;
     public ValueCallback<Uri> mUploadMessage;
-    public final static int FILE_CHOOSER_RESULT_CODE = 1;
     public final static int CAMERA_PERMISSION = 2;
     public OpenSite openSite;
     private OpenPhoto openPhoto = new OpenPhoto();
@@ -61,7 +59,7 @@ public class Dialog {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
                 if (url.contains("mailto:to") || url.contains("mailto:")) {
-                    openSite.openEmail(url.replace("%20", " "));
+                    openSite.openApp(url);
                 } else if (url.contains("whatsapp://send") || url.contains("fb-messenger")) {
                     openSite.openWhatsApp(url, popup);
                     openSite.openMessenger(url);
@@ -89,13 +87,20 @@ public class Dialog {
     }
 
     private void initDialog(LinearLayout wrapper) {
-
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
         builder.setNegativeButton("close", (v, l) -> close());
         builder.setView(wrapper);
-        dialog = builder.create();
-        dialog.show();
+        builder.setCancelable(false);
 
+        dialog = builder.create();
+
+        dialog.setOnKeyListener((arg0, keyCode, event) -> {
+            if (keyCode == KeyEvent.KEYCODE_BACK) {
+                back();
+            }
+            return true;
+        });
+        dialog.show();
     }
 
     public void close() {
@@ -103,32 +108,41 @@ public class Dialog {
             wrapper.removeView(popup);
             dialog.dismiss();
             openDialog = true;
+            dialog = null;
             popup.destroy();
             popup = null;
         }
 
     }
 
+    public void back() {
+        if (dialog != null)
+            if (popup != null && popup.canGoBack())
+                popup.goBack();
+            else
+                close();
+    }
+
     private WebChromeClient webChromeClient = new WebChromeClient() {
 
         @Override
         public boolean onCreateWindow(final WebView view, boolean isDialog, boolean isUserGesture, Message resultMsg) {
-            popup1 = new WebView(context);
-            popup1.getSettings().setJavaScriptEnabled(true);
-            popup1.getSettings().setPluginState(WebSettings.PluginState.ON);
-            popup1.getSettings().setSupportMultipleWindows(false);
-            popup1.setLayoutParams(view.getLayoutParams());
-            popup1.getSettings().setUserAgentString(view.getSettings().getUserAgentString().replace("; wv", ""));
+            webView = new WebView(context);
+            webView.getSettings().setJavaScriptEnabled(true);
+            webView.getSettings().setPluginState(WebSettings.PluginState.ON);
+            webView.getSettings().setSupportMultipleWindows(false);
+            webView.setLayoutParams(view.getLayoutParams());
+            webView.getSettings().setUserAgentString(view.getSettings().getUserAgentString().replace("; wv", ""));
             view.setWebViewClient(new WebViewClient() {
                 @Override
                 public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                    popup1.loadUrl(url);
+                    webView.loadUrl(url);
                     return true;
                 }
 
             });
             wrapper.removeView(popup);
-            wrapper.addView(popup1, LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT);
+            wrapper.addView(webView, LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT);
             initDialog(wrapper);
 
             WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;

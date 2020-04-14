@@ -1,26 +1,22 @@
 package com.vuukle.webview;
 
-import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Message;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.webkit.ConsoleMessage;
 import android.webkit.CookieManager;
-import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
-import android.widget.Toast;
 
 import com.vuukle.webview.utils.Dialog;
 import com.vuukle.webview.utils.OpenPhoto;
@@ -85,7 +81,6 @@ public class MainActivity extends AppCompatActivity {
         } else {
             mWebViewComments.goBack();
         }
-        dialog.close();
     }
 
     private void configWebView() {
@@ -104,9 +99,9 @@ public class MainActivity extends AppCompatActivity {
                 if (openSite.isOpenSupportInBrowser(url)) {
                     openSite.openPrivacyPolicy(url);
                 } else if (url.contains("mailto:to") || url.contains("mailto:")) {
-                    openSite.openEmail(url.replace("%20", " "));
+                    openSite.openApp(url);
                 } else {
-                        dialog.openDialogOther(url);
+                    dialog.openDialogOther(url);
                 }
                 return true;
             }
@@ -123,13 +118,13 @@ public class MainActivity extends AppCompatActivity {
                 if (intent == null) {
                     Intent intent1 = new Intent();
                     intent1.setData(openPhoto.getImageUri());
-                    dialog.uploadMessage .onReceiveValue(WebChromeClient.FileChooserParams.parseResult(resultCode, intent1));
+                    dialog.uploadMessage.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(resultCode, intent1));
                 } else
-                    dialog.uploadMessage .onReceiveValue(WebChromeClient.FileChooserParams.parseResult(resultCode, intent));
-                dialog.uploadMessage  = null;
+                    dialog.uploadMessage.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(resultCode, intent));
+                dialog.uploadMessage = null;
             }
         } else if (requestCode == FILE_CHOOSER_RESULT_CODE) {
-            if (null == dialog.uploadMessage )
+            if (null == dialog.uploadMessage)
                 return;
             Uri result = intent == null || resultCode != MainActivity.RESULT_OK ? null : intent.getData();
             dialog.mUploadMessage.onReceiveValue(result);
@@ -166,8 +161,9 @@ public class MainActivity extends AppCompatActivity {
                         if (url.contains(AUTH) || url.contains(CONSENT)) {
                             popup.loadUrl(url);
                             dialog.openDialog(popup);
+                            if (url.contains(CONSENT))
+                                hideKeyboard();
                         } else {
-                         //   mContainer.removeView(popup);
                             dialog.openDialogOther(url);
                         }
                     }
@@ -204,5 +200,16 @@ public class MainActivity extends AppCompatActivity {
 
     };
 
+    public void hideKeyboard() {
+        InputMethodManager imm = (InputMethodManager) getSystemService(Activity.INPUT_METHOD_SERVICE);
+        //Find the currently focused view, so we can grab the correct window token from it.
+        View view = getCurrentFocus();
+        //If no view currently has focus, create a new one, just so we can grab a window token from it
+
+        if (view == null) {
+            view = new View(this);
+        }
+        imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+    }
 
 }
