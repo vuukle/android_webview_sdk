@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.webkit.WebView;
+
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 
@@ -42,6 +43,7 @@ public class OpenSite {
             }
         }
     }
+
     public Boolean isOpenSupportInBrowser(String url) {
         return (url.contains(PRIVACY_POLICY) || url.contains(VUUKLE) || url.contains(BLOG_VUUKLE));
     }

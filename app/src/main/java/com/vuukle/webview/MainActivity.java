@@ -49,8 +49,6 @@ public class MainActivity extends AppCompatActivity {
     public static final String CONSENT = "consent";
     private OpenPhoto openPhoto = new OpenPhoto();
     public static final int REQUEST_SELECT_FILE = 1021;
-    private ValueCallback<Uri[]> uploadMessage;
-    private ValueCallback<Uri> mUploadMessage;
     public final static int FILE_CHOOSER_RESULT_CODE = 1;
     public final static int CAMERA_PERMISSION = 2;
 
@@ -87,6 +85,7 @@ public class MainActivity extends AppCompatActivity {
         } else {
             mWebViewComments.goBack();
         }
+        dialog.close();
     }
 
     private void configWebView() {
@@ -107,11 +106,8 @@ public class MainActivity extends AppCompatActivity {
                 } else if (url.contains("mailto:to") || url.contains("mailto:")) {
                     openSite.openEmail(url.replace("%20", " "));
                 } else {
-                    //Lets signInUser whenever url is clicked just for sample
-                    openSite.openWhatsApp(url, view);
-                    openSite.openMessenger(url);
+                        dialog.openDialogOther(url);
                 }
-                //if u use super() it will load url into webView
                 return true;
             }
         });
@@ -122,22 +118,22 @@ public class MainActivity extends AppCompatActivity {
             openPhoto.selectImage(MainActivity.this);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             if (requestCode == REQUEST_SELECT_FILE) {
-                if (uploadMessage == null)
+                if (dialog.uploadMessage == null)
                     return;
                 if (intent == null) {
                     Intent intent1 = new Intent();
                     intent1.setData(openPhoto.getImageUri());
-                    uploadMessage.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(resultCode, intent1));
+                    dialog.uploadMessage .onReceiveValue(WebChromeClient.FileChooserParams.parseResult(resultCode, intent1));
                 } else
-                    uploadMessage.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(resultCode, intent));
-                uploadMessage = null;
+                    dialog.uploadMessage .onReceiveValue(WebChromeClient.FileChooserParams.parseResult(resultCode, intent));
+                dialog.uploadMessage  = null;
             }
         } else if (requestCode == FILE_CHOOSER_RESULT_CODE) {
-            if (null == mUploadMessage)
+            if (null == dialog.uploadMessage )
                 return;
             Uri result = intent == null || resultCode != MainActivity.RESULT_OK ? null : intent.getData();
-            mUploadMessage.onReceiveValue(result);
-            mUploadMessage = null;
+            dialog.mUploadMessage.onReceiveValue(result);
+            dialog.mUploadMessage = null;
         }
 
     }
@@ -166,50 +162,24 @@ public class MainActivity extends AppCompatActivity {
             popup.setWebViewClient(new WebViewClient() {
                 @Override
                 public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                    if (url.contains(AUTH) || url.contains(CONSENT)) {
-                        Log.d("openWebView", "open vebView 2 " + url);
-                        if (popup != null) {
+                    if (popup != null) {
+                        if (url.contains(AUTH) || url.contains(CONSENT)) {
                             popup.loadUrl(url);
-                            dialog.openDialog(url, popup);
+                            dialog.openDialog(popup);
+                        } else {
+                         //   mContainer.removeView(popup);
+                            dialog.openDialogOther(url);
                         }
-                        checkConsent(url);
-                    } else {
-                        return selectOpenTab(url);
                     }
+                    checkConsent(url);
                     return true;
-                }
-
-                private boolean selectOpenTab(String url) {
-                    if (openSite.isOpenSupportInBrowser(url)) {
-                        openSite.openPrivacyPolicy(url);
-                        return destroyWebView();
-                    } else if (url.contains("msg_url")) {
-                        Log.d("openWebView", "open app " + url);
-                        openSite.openApp(url);
-                    } else if (url.contains("facebook") || url.contains("twitter") || url.contains("telegram")) {
-                        Log.d("openWebView", "open vebView 2.1 " + url);
-                        mContainer.addView(popup);
-                        popup.loadUrl(url);
-                    } else {
-                        Log.d("openWebView", "open vebView 1 " + url);
-                        mWebViewComments.loadUrl(url);
-                        return destroyWebView();
-                    }
-                    return true;
-                }
-
-                private Boolean destroyWebView() {
-                    mContainer.removeView(popup);
-                    popup.destroy();
-                    return false;
                 }
 
                 private void checkConsent(String url) {
                     if (urlLast[0].equals(url)) {
-                        //   mContainer.removeView(popup);
+                        dialog.close();
                         popup.destroy();
                     } else {
-                        // mWebViewComments.reload();
                         urlLast[0] = url;
                     }
                 }
@@ -232,38 +202,6 @@ public class MainActivity extends AppCompatActivity {
             return true;
         }
 
-        // For Lollipop 5.0+ Devices
-        public boolean onShowFileChooser(WebView mWebView, ValueCallback<Uri[]> filePathCallback, FileChooserParams fileChooserParams) {
-            if (uploadMessage != null) {
-                uploadMessage.onReceiveValue(null);
-                uploadMessage = null;
-            }
-            uploadMessage = filePathCallback;
-            return openPermission();
-        }
-
-
-        private boolean openPermission() {
-            if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
-                openPhoto.selectImage(MainActivity.this);
-                return true;
-            } else {
-                ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.CAMERA}, CAMERA_PERMISSION);
-                try {
-                    openPhoto.selectImage(MainActivity.this);
-                } catch (Exception e) {
-                    Toast.makeText(MainActivity.this, "An error has occurred", Toast.LENGTH_SHORT).show();
-                }
-                if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
-                    openPhoto.selectImage(MainActivity.this);
-                    return true;
-                } else {
-                    uploadMessage = null;
-                    return false;
-                }
-
-            }
-        }
     };
 
 
