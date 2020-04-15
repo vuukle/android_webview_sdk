@@ -99,6 +99,7 @@ public class Dialog {
 
         dialog.setOnKeyListener((arg0, keyCode, event) -> {
             if (keyCode == KeyEvent.KEYCODE_BACK) {
+                context.reloadView();
                 back();
             }
             return true;
