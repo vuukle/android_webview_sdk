@@ -88,7 +88,10 @@ public class Dialog {
 
     private void initDialog(LinearLayout wrapper) {
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
-        builder.setNegativeButton("close", (v, l) -> close());
+        builder.setNegativeButton("close", (v, l) -> {
+            context.reloadView();
+            close();
+        });
         builder.setView(wrapper);
         builder.setCancelable(false);
 

@@ -21,8 +21,9 @@ import android.widget.FrameLayout;
 import com.vuukle.webview.utils.Dialog;
 import com.vuukle.webview.utils.OpenPhoto;
 import com.vuukle.webview.utils.OpenSite;
+import com.vuukle.webview.utils.Reload;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements Reload {
     private static final String TAG = "MainActivity";
 
     //URL for loading into WebView
@@ -217,4 +218,8 @@ public class MainActivity extends AppCompatActivity {
         imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
     }
 
+    @Override
+    public void reloadView() {
+        mWebViewComments.reload();
+    }
 }
