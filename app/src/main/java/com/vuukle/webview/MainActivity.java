@@ -38,6 +38,7 @@ public class MainActivity extends AppCompatActivity {
     public OpenSite openSite;
     public Dialog dialog;
     //Constant
+    public static final String errorTwitter = "twitter/callback?denied";
     public static final String PRIVACY_POLICY = "https://docs.vuukle.com/";
     public static final String VUUKLE = "https://vuukle.com/";
     public static final String BLOG_VUUKLE = "https://blog.vuukle.com/";
@@ -159,10 +160,14 @@ public class MainActivity extends AppCompatActivity {
                 public boolean shouldOverrideUrlLoading(WebView view, String url) {
                     if (popup != null) {
                         if (url.contains(AUTH) || url.contains(CONSENT)) {
-                            popup.loadUrl(url);
-                            dialog.openDialog(popup);
-                            if (url.contains(CONSENT))
-                                hideKeyboard();
+                            if (url.contains(errorTwitter))
+                                dialog.close();
+                            else {
+                                popup.loadUrl(url);
+                                dialog.openDialog(popup);
+                                if (url.contains(CONSENT))
+                                    hideKeyboard();
+                            }
                         } else {
                             dialog.openDialogOther(url);
                         }
