@@ -1,5 +1,5 @@
 package com.vuukle.webview.utils;
 
-public interface Reload {
+public interface ListenerModalWindow {
     void reloadView();
 }

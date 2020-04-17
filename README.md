@@ -48,6 +48,11 @@ Required parameters (for emote widget iframe):
 ----------
 ```xml
 <uses-permission android:name="android.permission.INTERNET" />
+<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+<uses-permission android:name="android.permission.CAMERA" />
+<uses-feature android:name="android.hardware.camera" />
+<uses-feature android:name="android.hardware.camera.autofocus" />
 ```
 
 ### 3) Getting events from javascript page.
@@ -95,77 +100,235 @@ mWebViewComments.setWebViewClient(new WebViewClient(){
             }
         });
 ```
-
-### 6) Full sample:
+### 6)The "Dialog" file shows a modal window
+### 7)The file "OpenPhoto" has the logic of opening a photo
+### 8)The "OpenSite" says it's open in or out of the application
+### 9)The "ListenerModalWindow" Using this interface, the modal window communicates with the main window.
+### 10) Full sample:
 ----------
 ```java
-import android.support.v7.app.AppCompatActivity;
+
+import android.app.Activity;
+import android.content.Intent;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Message;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.webkit.ConsoleMessage;
+import android.webkit.CookieManager;
 import android.webkit.WebChromeClient;
+import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.FrameLayout;
 
-public class MainActivity extends AppCompatActivity {
+import com.vuukle.webview.utils.Dialog;
+import com.vuukle.webview.utils.OpenPhoto;
+import com.vuukle.webview.utils.OpenSite;
+import com.vuukle.webview.utils.ListenerModalWindow;
+
+public class MainActivity extends AppCompatActivity implements Reload {
     private static final String TAG = "MainActivity";
 
     //URL for loading into WebView
-    private final String COMMENTS\_URL = "http://test.vuukle.com/widgets/index.aspx?uri=http%3A%2F%2Findiatoday.intoday.in%2Fstory%2Flive-satya-nadella-india-today-conclave-next-2017%2F1%2F1083875.html&amp;id=dc34b5cc-453d-468a-96ae-075a66cd9eb7&amp;bizUniqueId=story\_1083875&amp;d=0&amp;t=India%20Today%20Conclave%20Next%202017%2C%20news%2C%20story&amp;h=India%20Today%20Conclave%20Next%202017%20LIVE%3A%20Industry%20leaders%20discuss%20the%20maturing%20of%20Internet%20of%20Things%20%3A%20India%20Today%20Conclave%20Next%202017%2C%20News%20-%20India%20Today&amp;stories\_time=&amp;custom\_text=&amp;filter\_tag=undefined&amp;l=&amp;ga=UA-795349-17&amp;col=d00b26&amp;c=1&amp;l\_d=1&amp;cl=&amp;img=http%3A%2F%2Fmedia2.intoday.in%2Findiatoday%2Fimages%2Fstories%2Fiot-for-story\_647\_110717032238.jpg&amp;refHost=indiatoday.intoday.in&amp;host=indiatoday.intoday.in&amp;auth=JTVCJTdCJTIwJTIybmFtZSUyMjolMjAlMjJJbmRpYVRvZGF5LmluJTIwJTIyLCUyMCUyMCUyMCUyMmVtYWlsJTIyOiUyMCUyMmRlc2staXRnZEBpbnRvZGF5LmNvbSUyMCUyMiwlMjAlMjAlMjAlMjJ0eXBlJTIyOiUyMCUyMkludGVybmFsJTIwJTIyJTdEJTVE&amp;cc=&amp;emote=1&amp;vuukle\_div=vuukle\_div&amp;localization\_text=&amp;toxic\_threshold=&amp;gr=false&amp;vv=176";
-
-    //WebView
-    private WebView mWebViewComments;
-
+    private final String COMMENTS_URL = "https://cdntest.vuukle.com/amp.html?apiKey=c7368a34-dac3-4f39-9b7c-b8ac2a2da575&host=smalltester.000webhostapp.com&id=381&img=https://smalltester.000webhostapp.com/wp-content/uploads/2017/10/wallhaven-303371-825x510.jpg&title=Newpost&url=https://smalltester.000webhostapp.com/2017/12/new-post-22#1";
     //login name
-    String name = "Ross";
+    String name = "Alex";
     //login email
-    String email = "email@sda";
+    String email = "email@test.com";
+    public WebView popup;
+    //WebView
+    public WebView mWebViewComments;
+    public FrameLayout mContainer;
+    public OpenSite openSite;
+    public Dialog dialog;
+    //Constant
+    public static final String errorTwitter = "twitter/callback?denied";
+    public static final String PRIVACY_POLICY = "https://docs.vuukle.com/";
+    public static final String VUUKLE = "https://vuukle.com/";
+    public static final String BLOG_VUUKLE = "https://blog.vuukle.com/";
+    public static final String AUTH = "auth";
+    public static final String CONSENT = "consent";
+    private OpenPhoto openPhoto = new OpenPhoto();
+    public static final int REQUEST_SELECT_FILE = 1021;
+    public final static int FILE_CHOOSER_RESULT_CODE = 1;
+    public final static int CAMERA_PERMISSION = 2;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
+        // debug test webView
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            WebView.setWebContentsDebuggingEnabled(true);
+        }
         //initialising views
-        setContentView(R.layout.activity\_main);
-        mWebViewComments = (WebView) findViewById(R.id.activity\_main\_webview\_comments);
-
-        //initialising webview
+        setContentView(R.layout.activity_main);
+        mWebViewComments = findViewById(R.id.activity_main_webview_comments);
+        mContainer = findViewById(R.id.container);
+        openSite = new OpenSite(this);
+        dialog = new Dialog(this);
+        //initialising webView
         configWebView();
 
-        //load url to display in webview
-        mWebViewComments.loadUrl(COMMENTS\_URL);
+        //cookie
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            CookieManager.getInstance().setAcceptThirdPartyCookies(mWebViewComments, true);
+        } else
+            CookieManager.getInstance().setAcceptCookie(true);
+        //load url to display in webView
+        mWebViewComments.loadUrl(COMMENTS_URL);
     }
+
+    @Override
+    public void onBackPressed() {
+        if (this.popup != null && this.popup.getParent() != null) {
+            mContainer.removeView(popup);
+            this.popup.destroy();
+        } else {
+            mWebViewComments.goBack();
+        }
+    }
+
     private void configWebView() {
         //javascript support
         mWebViewComments.getSettings().setJavaScriptEnabled(true);
-        //html5 support
-        mWebViewComments.getSettings().setDomStorageEnabled(true);
 
-        mWebViewComments.setWebChromeClient(new WebChromeClient() {
-            @Override
-            public boolean onConsoleMessage(ConsoleMessage consoleMessage) {
-                Log.d("consolejs", consoleMessage.message());
-                //Listening for console message that contains "Comments initialized!" string
-                if(consoleMessage.message().contains("Comments initialized!")) {
-                    //signInUser(name, email) - javascript function implemented on a page
-                    mWebViewComments.loadUrl("javascript:signInUser(&#39;" + name + "&#39;, &#39;" + email + "&#39;)");
-                }
-                return super.onConsoleMessage(consoleMessage);
-            }
-        });
-        mWebViewComments.setWebViewClient(new WebViewClient(){
+        mWebViewComments.getSettings().setDomStorageEnabled(true);
+        mWebViewComments.getSettings().setSupportMultipleWindows(true);
+
+        mWebViewComments.setWebChromeClient(webChromeClient);
+        mWebViewComments.setWebViewClient(new WebViewClient() {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, final String url) {
                 //Clicked url
                 Log.d(TAG, "Clicked url: " + url);
-
-                //Lets signInUser whenever url is clicked just for sample
-                mWebViewComments.loadUrl("javascript:signInUser(&#39;" + name + "&#39;, &#39;" + email + "&#39;)");
-
-                //if u use super() it will load url into webview
+                if (openSite.isOpenSupportInBrowser(url)) {
+                    openSite.openPrivacyPolicy(url);
+                } else if (url.contains("mailto:to") || url.contains("mailto:")) {
+                    openSite.openApp(url);
+                } else {
+                    dialog.openDialogOther(url);
+                }
                 return true;
             }
         });
+    }
+
+    protected void onActivityResult(int requestCode, int resultCode, Intent intent) {
+        if (CAMERA_PERMISSION == resultCode && requestCode == Activity.RESULT_OK)
+            openPhoto.selectImage(MainActivity.this);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            if (requestCode == REQUEST_SELECT_FILE) {
+                if (dialog.uploadMessage == null)
+                    return;
+                if (intent == null) {
+                    Intent intent1 = new Intent();
+                    intent1.setData(openPhoto.getImageUri());
+                    dialog.uploadMessage.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(resultCode, intent1));
+                } else
+                    dialog.uploadMessage.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(resultCode, intent));
+                dialog.uploadMessage = null;
+            }
+        } else if (requestCode == FILE_CHOOSER_RESULT_CODE) {
+            if (null == dialog.uploadMessage)
+                return;
+            Uri result = intent == null || resultCode != MainActivity.RESULT_OK ? null : intent.getData();
+            dialog.mUploadMessage.onReceiveValue(result);
+            dialog.mUploadMessage = null;
+        }
+
+    }
+
+    private WebChromeClient webChromeClient = new WebChromeClient() {
+        @Override
+        public boolean onConsoleMessage(ConsoleMessage consoleMessage) {
+            Log.d("consoleJs", consoleMessage.message());
+            //Listening for console message that contains "Comments initialized!" string
+            if (consoleMessage.message().contains("Comments initialized!")) {
+                //signInUser(name, email) - javascript function implemented on a page
+                mWebViewComments.loadUrl("javascript:signInUser('" + name + "', '" + email + "')");
+            }
+            return super.onConsoleMessage(consoleMessage);
+        }
+
+        @Override
+        public boolean onCreateWindow(final WebView view, boolean isDialog, boolean isUserGesture, Message resultMsg) {
+            popup = new WebView(MainActivity.this);
+            popup.getSettings().setJavaScriptEnabled(true);
+            popup.getSettings().setPluginState(WebSettings.PluginState.ON);
+            popup.getSettings().setSupportMultipleWindows(true);
+            popup.setLayoutParams(view.getLayoutParams());
+            popup.getSettings().setUserAgentString(popup.getSettings().getUserAgentString().replace("; wv", ""));
+            final String[] urlLast = {""};
+            popup.setWebViewClient(new WebViewClient() {
+                @Override
+                public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                    if (popup != null) {
+                        if (url.contains(AUTH) || url.contains(CONSENT)) {
+                            if (url.contains(errorTwitter))
+                                dialog.close();
+                            else {
+                                popup.loadUrl(url);
+                                dialog.openDialog(popup);
+                                if (url.contains(CONSENT))
+                                    hideKeyboard();
+                            }
+                        } else {
+                            dialog.openDialogOther(url);
+                        }
+                    }
+                    checkConsent(url);
+                    return true;
+                }
+
+                private void checkConsent(String url) {
+                    if (urlLast[0].equals(url)) {
+                        dialog.close();
+                        popup.destroy();
+                    } else {
+                        urlLast[0] = url;
+                    }
+                }
+
+            });
+            popup.setWebChromeClient(new WebChromeClient() {
+                @Override
+                public void onCloseWindow(WebView window) {
+                    super.onCloseWindow(window);
+                    dialog.close();
+                    if (mWebViewComments != null)
+                        mWebViewComments.reload();
+                    mContainer.removeView(window);
+                }
+            });
+            WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
+            transport.setWebView(popup);
+            resultMsg.sendToTarget();
+
+            return true;
+        }
+
+    };
+
+    public void hideKeyboard() {
+        InputMethodManager imm = (InputMethodManager) getSystemService(Activity.INPUT_METHOD_SERVICE);
+        //Find the currently focused view, so we can grab the correct window token from it.
+        View view = getCurrentFocus();
+        //If no view currently has focus, create a new one, just so we can grab a window token from it
+
+        if (view == null) {
+            view = new View(this);
+        }
+        imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+    }
+
+    @Override
+    public void reloadView() {
+        mWebViewComments.reload();
     }
 }
 ```
