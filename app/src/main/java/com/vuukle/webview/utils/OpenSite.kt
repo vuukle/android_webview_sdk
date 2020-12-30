@@ -27,10 +27,13 @@ class OpenSite(private val context: Context) {
                             url.substring(url.indexOf("?link=") + 6))
             sendIntent.type = "text/plain"
             sendIntent.setPackage("com.facebook.orca")
+            sendIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             try {
                 context.startActivity(sendIntent)
             } catch (ex: ActivityNotFoundException) {
-                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=com.facebook.orca")))
+                val mIntent = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=com.facebook.orca"))
+                mIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                context.startActivity(mIntent)
             }
         }
     }
@@ -70,6 +73,7 @@ class OpenSite(private val context: Context) {
 
     fun openApp(url: String?) {
         val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         context.startActivity(intent)
     }
 

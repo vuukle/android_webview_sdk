@@ -2,35 +2,40 @@ package com.vuukle.webview
 
 import android.Manifest
 import android.app.Activity
+import android.app.AlertDialog
+import android.content.DialogInterface
 import android.content.Intent
-import android.graphics.Bitmap
-import android.net.http.SslError
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.os.Message
 import android.util.Log
-import android.view.KeyEvent
 import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.webkit.*
 import android.webkit.WebView.WebViewTransport
-import android.widget.FrameLayout
+import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import com.karumi.dexter.Dexter
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import com.karumi.dexter.PermissionToken
 import com.karumi.dexter.listener.PermissionDeniedResponse
 import com.karumi.dexter.listener.PermissionGrantedResponse
 import com.karumi.dexter.listener.PermissionRequest
 import com.karumi.dexter.listener.single.PermissionListener
+import com.vuukle.webview.ext.needOpenWithOther
 import com.vuukle.webview.utils.Dialog
 import com.vuukle.webview.utils.ListenerModalWindow
 import com.vuukle.webview.utils.OpenPhoto
 import com.vuukle.webview.utils.OpenSite
 
+
 class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListener {
     //URL for loading into WebView
-    private val COMMENTS_URL = "https://cdntest.vuukle.com/amp.html?apiKey=c7368a34-dac3-4f39-9b7c-b8ac2a2da575&host=smalltester.000webhostapp.com&id=381&img=https://smalltester.000webhostapp.com/wp-content/uploads/2017/10/wallhaven-303371-825x510.jpg&title=Newpost&url=https://smalltester.000webhostapp.com/2017/12/new-post-22#1"
+    private val COMMENTS_URL = "https://cdn.vuukle.com/amp.html?url=https%3A%2F%2Fwww.prowrestling.com%2Fimpact-wrestling-results-1282020%2F&host=prowrestling.com&id=1196371&apiKey=46489985-43ef-48ed-9bfd-61971e6af217&img=https%3A%2F%2Fwww.prowrestling.com%2Fwp-content%2Fuploads%2F2020%2F12%2FKenny-Omega-Impact-Wrestling.jpeg&title=IMPACT%2BWrestling%2BResults%2B%252812%252F8%2529%253A%2BKenny%2BOmega%2BSpeaks%252C%2BKnockouts%2BTag%2BTournament%2BContinues%2521&tags=Featured"
+    private val POWERBAR_URL = "https://cdntest.vuukle.com/widgets/powerbar.html?amp=false&apiKey=664e0b85-5b2c-4881-ba64-3aa9f992d01c&host=relaxed-beaver-76304e.netlify.com&articleId=Index&img=https%3A%2F%2Fwww.gettyimages.ie%2Fgi-resources%2Fimages%2FHomepage%2FHero%2FUK%2FCMS_Creative_164657191_Kingfisher.jpg&title=Index&url=https%3A%2F%2Frelaxed-beaver-76304e.netlify.app%2F&tags=123&author=123&lang=en&gr=false&darkMode=false&defaultEmote=1&items=&standalone=0&mode=horizontal"
+    private val PERMISSION_REQUEST_CODE = 200
 
     //login name
     var name = "Alex"
@@ -41,16 +46,65 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
 
     //WebView
     var mWebViewComments: WebView? = null
-    var mContainer: FrameLayout? = null
+    var mWebViewPowerBar: WebView? = null
+    var mContainer: LinearLayout? = null
     var openSite: OpenSite? = null
     var dialog: Dialog? = null
     private val openPhoto = OpenPhoto()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Dexter.withActivity(this)
-                .withPermission(Manifest.permission.CAMERA)
-                .withListener(this)
-                .check()
+        initOnClicks();
+        handleOnCreate()
+
+    }
+
+    private fun initOnClicks() {
+        dialog?.addCloseListener() {
+            mWebViewComments?.reload()
+        }
+    }
+
+    private fun checkPermission(): Boolean {
+        return ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+    }
+
+    private fun requestPermission() {
+        ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.CAMERA),
+                PERMISSION_REQUEST_CODE)
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        when (requestCode) {
+            PERMISSION_REQUEST_CODE -> if (grantResults.size > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Toast.makeText(applicationContext, "Permission Granted", Toast.LENGTH_SHORT).show()
+
+                // main logic
+            } else {
+                Toast.makeText(applicationContext, "Permission Denied", Toast.LENGTH_SHORT).show()
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
+                            != PackageManager.PERMISSION_GRANTED) {
+                        showMessageOKCancel("You need to allow access permissions"
+                        ) { dialog, which ->
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                                requestPermission()
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun showMessageOKCancel(message: String, okListener: DialogInterface.OnClickListener) {
+
+        AlertDialog.Builder(this)
+                .setMessage(message)
+                .setPositiveButton("OK", okListener)
+                .setNegativeButton("Cancel", null)
+                .create()
+                .show()
     }
 
     private fun handleOnCreate() {
@@ -61,6 +115,7 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
         //initialising views
         setContentView(R.layout.activity_main)
         mWebViewComments = findViewById(R.id.activity_main_webview_comments)
+        mWebViewPowerBar = findViewById(R.id.activity_main_webview_powerbar)
         mContainer = findViewById(R.id.container)
         openSite = OpenSite(this)
         dialog = Dialog(this)
@@ -73,6 +128,8 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
         } else CookieManager.getInstance().setAcceptCookie(true)
         //load url to display in webView
         mWebViewComments?.loadUrl(COMMENTS_URL)
+        mWebViewPowerBar?.loadUrl(POWERBAR_URL)
+
     }
 
     override fun onBackPressed() {
@@ -86,99 +143,12 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
 
     private fun configWebView() {
         //javascript support
-        mWebViewComments!!.settings.javaScriptEnabled = true
-        mWebViewComments!!.settings.domStorageEnabled = true
-        mWebViewComments!!.settings.setSupportMultipleWindows(true)
-        mWebViewComments!!.webChromeClient = webChromeClient
-        mWebViewComments!!.webViewClient = object : WebViewClient() {
 
-            override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
-                return super.shouldOverrideUrlLoading(view, request)
-            }
-
-            override fun onPageFinished(view: WebView?, url: String?) {
-                super.onPageFinished(view, url)
-            }
-
-            override fun shouldInterceptRequest(view: WebView?, url: String?): WebResourceResponse? {
-                return super.shouldInterceptRequest(view, url)
-            }
-
-            override fun shouldInterceptRequest(view: WebView?, request: WebResourceRequest?): WebResourceResponse? {
-                return super.shouldInterceptRequest(view, request)
-            }
-
-            override fun shouldOverrideKeyEvent(view: WebView?, event: KeyEvent?): Boolean {
-                return super.shouldOverrideKeyEvent(view, event)
-            }
-
-            override fun onSafeBrowsingHit(view: WebView?, request: WebResourceRequest?, threatType: Int, callback: SafeBrowsingResponse?) {
-                super.onSafeBrowsingHit(view, request, threatType, callback)
-            }
-
-            override fun doUpdateVisitedHistory(view: WebView?, url: String?, isReload: Boolean) {
-                super.doUpdateVisitedHistory(view, url, isReload)
-            }
-
-            override fun onReceivedError(view: WebView?, errorCode: Int, description: String?, failingUrl: String?) {
-                super.onReceivedError(view, errorCode, description, failingUrl)
-            }
-
-            override fun onReceivedError(view: WebView?, request: WebResourceRequest?, error: WebResourceError?) {
-                super.onReceivedError(view, request, error)
-            }
-
-            override fun onRenderProcessGone(view: WebView?, detail: RenderProcessGoneDetail?): Boolean {
-                return super.onRenderProcessGone(view, detail)
-            }
-
-            override fun onReceivedLoginRequest(view: WebView?, realm: String?, account: String?, args: String?) {
-                super.onReceivedLoginRequest(view, realm, account, args)
-            }
-
-            override fun onReceivedHttpError(view: WebView?, request: WebResourceRequest?, errorResponse: WebResourceResponse?) {
-                super.onReceivedHttpError(view, request, errorResponse)
-            }
-
-            override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
-                super.onPageStarted(view, url, favicon)
-            }
-
-            override fun onScaleChanged(view: WebView?, oldScale: Float, newScale: Float) {
-                super.onScaleChanged(view, oldScale, newScale)
-            }
-
-            override fun onPageCommitVisible(view: WebView?, url: String?) {
-                super.onPageCommitVisible(view, url)
-            }
-
-            override fun onUnhandledKeyEvent(view: WebView?, event: KeyEvent?) {
-                super.onUnhandledKeyEvent(view, event)
-            }
-
-            override fun onReceivedClientCertRequest(view: WebView?, request: ClientCertRequest?) {
-                super.onReceivedClientCertRequest(view, request)
-            }
-
-            override fun onReceivedHttpAuthRequest(view: WebView?, handler: HttpAuthHandler?, host: String?, realm: String?) {
-                super.onReceivedHttpAuthRequest(view, handler, host, realm)
-            }
-
-            override fun onReceivedSslError(view: WebView?, handler: SslErrorHandler?, error: SslError?) {
-                super.onReceivedSslError(view, handler, error)
-            }
-
-            override fun onTooManyRedirects(view: WebView?, cancelMsg: Message?, continueMsg: Message?) {
-                super.onTooManyRedirects(view, cancelMsg, continueMsg)
-            }
-
-            override fun onFormResubmission(view: WebView?, dontResend: Message?, resend: Message?) {
-                super.onFormResubmission(view, dontResend, resend)
-            }
-
-            override fun onLoadResource(view: WebView?, url: String?) {
-                super.onLoadResource(view, url)
-            }
+        mWebViewPowerBar!!.settings.javaScriptEnabled = true
+        mWebViewPowerBar!!.settings.domStorageEnabled = true
+        mWebViewPowerBar!!.settings.setSupportMultipleWindows(true)
+        mWebViewPowerBar!!.webChromeClient = webChromeClient
+        mWebViewPowerBar!!.webViewClient = object : WebViewClient() {
 
             override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
                 //Clicked url
@@ -188,7 +158,38 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
                 } else if (url.contains("mailto:to") || url.contains("mailto:")) {
                     openSite!!.openApp(url)
                 } else {
-                    dialog!!.openDialogOther(url)
+                    if (!url.needOpenWithOther()) {
+                        dialog!!.openDialogOther(url)
+                    }
+                }
+                return true
+            }
+        }
+
+
+        mWebViewComments?.settings?.javaScriptEnabled = true
+        mWebViewComments?.settings?.domStorageEnabled = true
+        mWebViewComments?.settings?.setSupportZoom(false)
+        mWebViewComments?.settings?.allowFileAccess = true
+        mWebViewComments?.settings?.allowContentAccess = true
+        mWebViewComments?.scrollBarStyle = View.SCROLLBARS_INSIDE_OVERLAY
+        mWebViewComments!!.webChromeClient = webChromeClient
+        mWebViewComments?.settings?.pluginState = WebSettings.PluginState.ON;
+        mWebViewComments?.settings?.mediaPlaybackRequiresUserGesture = false;
+        mWebViewComments!!.webViewClient = object : WebViewClient() {
+
+
+            override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
+                //Clicked url
+                Log.i(TAG, "Clicked url: $url")
+                if (openSite!!.isOpenSupportInBrowser(url)) {
+                    openSite!!.openPrivacyPolicy(url)
+                } else if (url.contains("mailto:to") || url.contains("mailto:")) {
+                    openSite!!.openApp(url)
+                } else {
+                    if (!url.needOpenWithOther()) {
+                        dialog!!.openDialogOther(url)
+                    }
                 }
                 return true
             }
@@ -230,10 +231,11 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
         override fun onCreateWindow(view: WebView, isDialog: Boolean, isUserGesture: Boolean, resultMsg: Message): Boolean {
             popup = WebView(this@MainActivity)
             popup!!.settings.javaScriptEnabled = true
+            popup!!.settings.domStorageEnabled = true
             popup!!.settings.pluginState = WebSettings.PluginState.ON
             popup!!.settings.setSupportMultipleWindows(true)
             popup!!.layoutParams = view.layoutParams
-            popup!!.settings.setUserAgentString(popup!!.settings.userAgentString.replace("; wv", ""))
+            popup!!.settings.userAgentString = popup!!.settings.userAgentString.replace("; wv", "")
             val urlLast = arrayOf("")
             popup!!.webViewClient = object : WebViewClient() {
                 override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
@@ -245,7 +247,11 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
                                 if (url.contains(CONSENT)) hideKeyboard()
                             }
                         } else {
-                            dialog!!.openDialogOther(url)
+
+                            if (!url.needOpenWithOther()) {
+                                dialog!!.openDialogOther(url)
+                                dialog!!
+                            }
                         }
                     }
                     checkConsent(url)
@@ -265,7 +271,7 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
                 override fun onCloseWindow(window: WebView) {
                     super.onCloseWindow(window)
                     dialog!!.close()
-                    if (mWebViewComments != null) mWebViewComments!!.reload()
+                    //if (mWebViewComments != null) mWebViewComments!!.reload()
                     mContainer!!.removeView(window)
                 }
             }
@@ -288,11 +294,11 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
     }
 
     override fun reloadView() {
-        mWebViewComments!!.reload()
+        //mWebViewComments!!.reload()
     }
 
     companion object {
-        private const val TAG = "MainActivity"
+        const val TAG = "MainActivity"
 
         //Constant
         const val errorTwitter = "twitter/callback?denied"

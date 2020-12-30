@@ -3,15 +3,18 @@ package com.vuukle.webview.utils
 import android.Manifest
 import android.app.AlertDialog
 import android.content.DialogInterface
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Message
+import android.util.Log
 import android.view.KeyEvent
 import android.view.View
 import android.webkit.*
 import android.webkit.WebView.WebViewTransport
 import android.widget.EditText
 import android.widget.LinearLayout
+import android.widget.ProgressBar
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -23,6 +26,7 @@ class Dialog(private val context: MainActivity) {
     private var wrapper: LinearLayout? = null
     private var popup: WebView? = null
     private var webView: WebView? = null
+    private var onCloseListener: DialogCancelListener? = null
 
     @JvmField
     var uploadMessage: ValueCallback<Array<Uri>>? = null
@@ -31,6 +35,8 @@ class Dialog(private val context: MainActivity) {
     var mUploadMessage: ValueCallback<Uri>? = null
     var openSite: OpenSite? = null
     private val openPhoto = OpenPhoto()
+
+    private var progressBar: ProgressBar? = null
     fun openDialog(popup: WebView?) {
         this.popup = popup
         initLinearLayout()
@@ -39,20 +45,56 @@ class Dialog(private val context: MainActivity) {
     fun openDialogOther(url: String?) {
         openSite = OpenSite(context)
         popup = WebView(context)
-        popup!!.loadUrl(url!!)
-        popup!!.webChromeClient = webChromeClient
-        popup!!.settings.javaScriptEnabled = true
         popup!!.settings.pluginState = WebSettings.PluginState.ON
-        popup!!.settings.setSupportMultipleWindows(false)
+        popup!!.settings.setSupportMultipleWindows(true)
+        popup!!.settings.domStorageEnabled = true
+        popup!!.settings.javaScriptEnabled = true
+        popup!!.settings.builtInZoomControls = true
+        popup!!.settings.setAppCacheEnabled(true)
+        popup!!.settings.loadsImagesAutomatically = true
+        popup!!.scrollBarStyle = View.SCROLLBARS_INSIDE_OVERLAY
+
+        if (url == null) {
+            //TODO: Important log
+            return
+        }
+
+        when {
+            url.contains("whatsapp://send") -> {
+                openSite!!.openWhatsApp(url, popup!!)
+            }
+            url.contains("fb-messenger") -> {
+                openSite!!.openMessenger(url)
+            }
+            else -> {
+                popup!!.loadUrl(url)
+            }
+        }
+
         popup!!.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
+
                 if (url.contains("mailto:to") || url.contains("mailto:")) {
                     openSite!!.openApp(url)
                 } else if (url.contains("whatsapp://send") || url.contains("fb-messenger") && popup != null) {
                     openSite!!.openWhatsApp(url, popup!!)
                     openSite!!.openMessenger(url)
-                } else if (url.contains("tg:msg_url")) openSite!!.openApp(url) else popup!!.loadUrl(url)
+                } else if (url.contains("tg:msg_url")) {
+                    openSite!!.openApp(url)
+                } else if(url.contains(MainActivity.CONSENT) ) {
+                    Log.i(MainActivity.TAG, "Clicked url: $url")
+
+
+                } else {
+                        showLoader(true)
+                        popup!!.loadUrl(url)
+                }
+
                 return true
+            }
+
+            override fun onPageFinished(view: WebView?, url: String?) {
+                showLoader(false)
             }
         }
         initLinearLayout()
@@ -68,6 +110,25 @@ class Dialog(private val context: MainActivity) {
             wrapper!!.addView(popup, LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT)
             wrapper!!.addView(keyboardHack, LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
             initDialog(wrapper)
+        }
+        initProgressBar()
+    }
+
+    private fun showLoader(show: Boolean) {
+        if (show) {
+            progressBar?.visibility = View.VISIBLE
+        } else {
+            progressBar?.visibility = View.GONE
+        }
+    }
+
+    private fun initProgressBar() {
+
+        // add progress bar
+        progressBar = ProgressBar(context)
+        progressBar!!.tag = "progressBar"
+        if (wrapper?.findViewWithTag<ProgressBar>("progressBar") == null) {
+            wrapper?.addView(progressBar)
         }
     }
 
@@ -99,6 +160,12 @@ class Dialog(private val context: MainActivity) {
             popup!!.destroy()
             popup = null
         }
+
+        onCloseListener?.onClosed()
+    }
+
+    fun addCloseListener(closeListener: DialogCancelListener) {
+       this.onCloseListener = closeListener
     }
 
     fun back() {
@@ -129,6 +196,7 @@ class Dialog(private val context: MainActivity) {
         }
 
         // For Lollipop 5.0+ Devices
+
         override fun onShowFileChooser(mWebView: WebView, filePathCallback: ValueCallback<Array<Uri>>, fileChooserParams: FileChooserParams): Boolean {
             if (uploadMessage != null) {
                 uploadMessage!!.onReceiveValue(null)
