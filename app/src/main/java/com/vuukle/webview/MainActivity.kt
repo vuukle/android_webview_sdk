@@ -54,9 +54,8 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        initOnClicks();
         handleOnCreate()
-
+        initOnClicks();
     }
 
     private fun initOnClicks() {

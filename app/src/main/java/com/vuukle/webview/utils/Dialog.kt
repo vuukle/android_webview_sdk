@@ -43,6 +43,7 @@ class Dialog(private val context: MainActivity) {
     }
 
     fun openDialogOther(url: String?) {
+
         openSite = OpenSite(context)
         popup = WebView(context)
         popup!!.settings.pluginState = WebSettings.PluginState.ON
@@ -52,6 +53,8 @@ class Dialog(private val context: MainActivity) {
         popup!!.settings.builtInZoomControls = true
         popup!!.settings.setAppCacheEnabled(true)
         popup!!.settings.loadsImagesAutomatically = true
+        popup!!.settings.userAgentString = System.getProperty("http.agent")
+                ?: "Mozilla/5.0 (Linux; Android 11) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.91 Mobile Safari/537.36"
         popup!!.scrollBarStyle = View.SCROLLBARS_INSIDE_OVERLAY
 
         if (url == null) {
@@ -72,6 +75,7 @@ class Dialog(private val context: MainActivity) {
         }
 
         popup!!.webViewClient = object : WebViewClient() {
+
             override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
 
                 if (url.contains("mailto:to") || url.contains("mailto:")) {
@@ -81,13 +85,13 @@ class Dialog(private val context: MainActivity) {
                     openSite!!.openMessenger(url)
                 } else if (url.contains("tg:msg_url")) {
                     openSite!!.openApp(url)
-                } else if(url.contains(MainActivity.CONSENT) ) {
+                } else if (url.contains(MainActivity.CONSENT)) {
+                    showLoader(true)
+                    popup!!.loadUrl(url)
                     Log.i(MainActivity.TAG, "Clicked url: $url")
-
-
                 } else {
-                        showLoader(true)
-                        popup!!.loadUrl(url)
+                    showLoader(true)
+                    popup!!.loadUrl(url)
                 }
 
                 return true
@@ -165,7 +169,7 @@ class Dialog(private val context: MainActivity) {
     }
 
     fun addCloseListener(closeListener: DialogCancelListener) {
-       this.onCloseListener = closeListener
+        this.onCloseListener = closeListener
     }
 
     fun back() {
@@ -231,5 +235,4 @@ class Dialog(private val context: MainActivity) {
     companion object {
         const val CAMERA_PERMISSION = 2
     }
-
 }
