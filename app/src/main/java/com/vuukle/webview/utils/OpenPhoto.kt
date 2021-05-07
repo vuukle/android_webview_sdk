@@ -28,6 +28,7 @@ class OpenPhoto {
 
     @Throws(IOException::class)
     private fun getPictureFile(contex: Context): File {
+
         val timeStamp = SimpleDateFormat(FORMAT_TIME).format(Date())
         val pictureFile = VUUKLE + timeStamp
         val storageDir = contex.getExternalFilesDir(Environment.DIRECTORY_PICTURES)

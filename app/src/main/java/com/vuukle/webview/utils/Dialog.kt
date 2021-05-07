@@ -8,8 +8,11 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Message
 import android.util.Log
+import android.view.Gravity
 import android.view.KeyEvent
 import android.view.View
+import android.view.ViewGroup
+import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import android.webkit.*
 import android.webkit.WebView.WebViewTransport
 import android.widget.EditText
@@ -130,6 +133,13 @@ class Dialog(private val context: MainActivity) {
 
         // add progress bar
         progressBar = ProgressBar(context)
+        val lp = LinearLayout.LayoutParams(
+            100,
+            100
+        )
+        lp.gravity = Gravity.CENTER
+        lp.setMargins(50, 50,50, 50)
+        progressBar!!.layoutParams = lp
         progressBar!!.tag = "progressBar"
         if (wrapper?.findViewWithTag<ProgressBar>("progressBar") == null) {
             wrapper?.addView(progressBar)

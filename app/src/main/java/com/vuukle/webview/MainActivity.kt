@@ -59,13 +59,10 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
     }
 
     private fun initOnClicks() {
+
         dialog?.addCloseListener() {
             mWebViewComments?.reload()
         }
-    }
-
-    private fun checkPermission(): Boolean {
-        return ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
     }
 
     private fun requestPermission() {

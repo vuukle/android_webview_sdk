@@ -10,13 +10,16 @@ import java.io.UnsupportedEncodingException
 import java.net.URLDecoder
 
 class OpenSite(private val context: Context) {
+
     fun openWhatsApp(url: String, view: WebView) {
+
         var url = url
         url = decodeUrl(url)
         if (!url.contains("whatsapp://send") && !url.contains("fb-messenger")) view.loadUrl(url) else if (url.contains("whatsapp://send")) openApp("https://api.whatsapp.com" + url.substring(url.indexOf("://") + 2))
     }
 
     fun openMessenger(url: String) {
+
         var url = url
         url = decodeUrl(url)
         if (url.contains("fb-messenger")) {
@@ -39,14 +42,17 @@ class OpenSite(private val context: Context) {
     }
 
     fun isOpenSupportInBrowser(url: String): Boolean {
+
         return url.contains(MainActivity.PRIVACY_POLICY) || url.contains(MainActivity.VUUKLE) || url.contains(MainActivity.BLOG_VUUKLE)
     }
 
     fun openPrivacyPolicy(url: String?) {
+
         context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
     }
 
     fun openEmail(url: String) {
+
         var url = url
         url = decodeUrl(url)
         val emailIntent = Intent(Intent.ACTION_SENDTO, Uri.fromParts(
@@ -76,5 +82,4 @@ class OpenSite(private val context: Context) {
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         context.startActivity(intent)
     }
-
 }
