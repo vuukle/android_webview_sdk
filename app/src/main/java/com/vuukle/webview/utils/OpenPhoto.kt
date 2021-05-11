@@ -19,6 +19,7 @@ import java.util.*
 import kotlin.jvm.Throws
 
 class OpenPhoto {
+
     private val FORMAT_TIME = "yyyyMMddHHmmss"
     private val FILE_EXTENSION = ".jpg"
     private val FILE_PROVIDER = "com.vuukle.webview.android.fileprovider"
@@ -36,6 +37,7 @@ class OpenPhoto {
     }
 
     fun selectImage(context: Context) {
+
         val options = arrayOf<CharSequence>(context.getString(R.string.take_photo), context.getString(R.string.choose_from_gallery), context.getString(R.string.cancel))
         val builder = AlertDialog.Builder(context)
         builder.setTitle(context.getString(R.string.choose_your_profile_picture))

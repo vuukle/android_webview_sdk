@@ -104,6 +104,8 @@ class Dialog(private val context: MainActivity) {
                 showLoader(false)
             }
         }
+
+        popup?.webChromeClient = webChromeClient
         initLinearLayout()
     }
 
@@ -190,6 +192,7 @@ class Dialog(private val context: MainActivity) {
     }
 
     private val webChromeClient: WebChromeClient = object : WebChromeClient() {
+
         override fun onCreateWindow(view: WebView, isDialog: Boolean, isUserGesture: Boolean, resultMsg: Message): Boolean {
             webView = WebView(context)
             webView!!.settings.javaScriptEnabled = true
@@ -212,15 +215,10 @@ class Dialog(private val context: MainActivity) {
             return true
         }
 
-        // For Lollipop 5.0+ Devices
-
-        override fun onShowFileChooser(mWebView: WebView, filePathCallback: ValueCallback<Array<Uri>>, fileChooserParams: FileChooserParams): Boolean {
-            if (uploadMessage != null) {
-                uploadMessage!!.onReceiveValue(null)
-                uploadMessage = null
-            }
+        override fun onShowFileChooser(webView: WebView?, filePathCallback: ValueCallback<Array<Uri>>?, fileChooserParams: FileChooserParams?): Boolean {
             uploadMessage = filePathCallback
-            return openPermission()
+            openPhoto.selectImage(context)
+            return true
         }
 
         private fun openPermission(): Boolean {

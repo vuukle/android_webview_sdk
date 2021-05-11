@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Message
@@ -52,6 +53,8 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
     var mContainer: LinearLayout? = null
     var openSite: OpenSite? = null
     var dialog: Dialog? = null
+    @JvmField
+    var uploadMessage: ValueCallback<Array<Uri>>? = null
     private val openPhoto = OpenPhoto()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -101,7 +104,6 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
         when (requestCode) {
             PERMISSION_REQUEST_CODE -> if (grantResults.size > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 Toast.makeText(applicationContext, "Permission Granted", Toast.LENGTH_SHORT).show()
-
                 // main logic
             } else {
                 Toast.makeText(applicationContext, "Permission Denied", Toast.LENGTH_SHORT).show()
@@ -219,19 +221,43 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, intent: Intent?) {
+
         super.onActivityResult(requestCode, resultCode, intent)
+
         if (CAMERA_PERMISSION == resultCode && requestCode == Activity.RESULT_OK) openPhoto.selectImage(this@MainActivity)
+
+
+        if (requestCode == REQUEST_SELECT_FILE) {
+            val result = if (intent == null || resultCode != Activity.RESULT_OK) null else intent.data
+            result?.let {
+                dialog?.uploadMessage?.onReceiveValue(arrayOf(result))
+                dialog?.uploadMessage = null
+                uploadMessage?.onReceiveValue(arrayOf(result))
+                uploadMessage = null
+            }
+            return
+        }
+
+        //
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+
             if (requestCode == REQUEST_SELECT_FILE) {
+
                 if (dialog!!.uploadMessage == null) return
+
                 if (intent == null) {
                     val intent1 = Intent()
                     intent1.data = openPhoto.imageUri
                     dialog!!.uploadMessage!!.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(resultCode, intent1))
-                } else dialog!!.uploadMessage!!.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(resultCode, intent))
+                } else
+                    dialog!!.uploadMessage!!.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(resultCode, intent))
+
                 dialog!!.uploadMessage = null
             }
+
         } else if (requestCode == FILE_CHOOSER_RESULT_CODE) {
+
             if (null == dialog!!.uploadMessage) return
             val result = if (intent == null || resultCode != Activity.RESULT_OK) null else intent.data
             dialog!!.mUploadMessage!!.onReceiveValue(result)
@@ -240,6 +266,12 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
     }
 
     private val webChromeClient: WebChromeClient = object : WebChromeClient() {
+
+        override fun onShowFileChooser(webView: WebView?, filePathCallback: ValueCallback<Array<Uri>>?, fileChooserParams: FileChooserParams?): Boolean {
+            uploadMessage = filePathCallback
+            openPhoto.selectImage(context = this@MainActivity)
+            return true;
+        }
 
         override fun onConsoleMessage(consoleMessage: ConsoleMessage): Boolean {
            /* Log.d("consoleJs", consoleMessage.message())
@@ -290,7 +322,14 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
                     }
                 }
             }
+
             popup!!.webChromeClient = object : WebChromeClient() {
+
+                override fun onShowFileChooser(webView: WebView?, filePathCallback: ValueCallback<Array<Uri>>?, fileChooserParams: FileChooserParams?): Boolean {
+                    openPhoto.selectImage(context = this@MainActivity)
+                    return true;
+                }
+
                 override fun onCloseWindow(window: WebView) {
                     super.onCloseWindow(window)
                     dialog!!.close()
