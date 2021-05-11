@@ -12,21 +12,21 @@ import android.view.Gravity
 import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
+import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import android.webkit.*
 import android.webkit.WebView.WebViewTransport
-import android.widget.EditText
-import android.widget.LinearLayout
-import android.widget.ProgressBar
-import android.widget.Toast
+import android.widget.*
+import android.widget.RelativeLayout.TRUE
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.vuukle.webview.MainActivity
 
 class Dialog(private val context: MainActivity) {
+
     private var dialog: AlertDialog? = null
     private var openDialog = true
-    private var wrapper: LinearLayout? = null
+    private var wrapper: RelativeLayout? = null
     private var popup: WebView? = null
     private var webView: WebView? = null
     private var onCloseListener: DialogCancelListener? = null
@@ -108,15 +108,15 @@ class Dialog(private val context: MainActivity) {
     }
 
     private fun initLinearLayout() {
+
         if (openDialog) {
             openDialog = false
-            wrapper = LinearLayout(context)
-            wrapper?.minimumHeight = 200
+            wrapper = RelativeLayout(context)
+            wrapper?.minimumHeight = MATCH_PARENT
             val keyboardHack = EditText(context)
             keyboardHack.visibility = View.GONE
-            wrapper!!.orientation = LinearLayout.VERTICAL
-            wrapper!!.addView(popup, LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT)
-            wrapper!!.addView(keyboardHack, LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+            wrapper?.addView(popup, LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT)
+            wrapper?.addView(keyboardHack, LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
             initDialog(wrapper)
         }
         initProgressBar()
@@ -134,12 +134,12 @@ class Dialog(private val context: MainActivity) {
 
         // add progress bar
         progressBar = ProgressBar(context)
-        val lp = LinearLayout.LayoutParams(
-            100,
-            100
+        val lp = RelativeLayout.LayoutParams(
+                100,
+                100
         )
-        lp.gravity = Gravity.CENTER
-        lp.setMargins(50, 50,50, 50)
+        lp.addRule(RelativeLayout.CENTER_IN_PARENT, TRUE)
+        lp.setMargins(50, 50, 50, 50)
         progressBar!!.layoutParams = lp
         progressBar!!.tag = "progressBar"
         if (wrapper?.findViewWithTag<ProgressBar>("progressBar") == null) {
@@ -147,7 +147,8 @@ class Dialog(private val context: MainActivity) {
         }
     }
 
-    private fun initDialog(wrapper: LinearLayout?) {
+    private fun initDialog(wrapper: RelativeLayout?) {
+
         val builder = AlertDialog.Builder(context)
         builder.setNegativeButton("close") { v: DialogInterface?, l: Int ->
             context.reloadView()
@@ -164,6 +165,7 @@ class Dialog(private val context: MainActivity) {
             true
         }
         dialog?.show()
+        dialog?.window?.setLayout(MATCH_PARENT, MATCH_PARENT)
     }
 
     fun close() {

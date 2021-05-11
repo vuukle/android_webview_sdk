@@ -69,7 +69,7 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
         getSharedPreferences("asd", Context.MODE_PRIVATE)
 
         findViewById<Button>(R.id.login_by_sso).setOnClickListener {
-            loginBySSO("mous@email.com", "Sample User Name")
+            loginBySSO("sometempmail@yopmail.com", "Sample User Name")
         }
 
         findViewById<Button>(R.id.logout_by_sso).setOnClickListener {
