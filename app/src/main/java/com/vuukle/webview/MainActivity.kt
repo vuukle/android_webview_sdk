@@ -237,39 +237,16 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
             }
             return
         }
-
-        //
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-
-            if (requestCode == REQUEST_SELECT_FILE) {
-
-                if (dialog!!.uploadMessage == null) return
-
-                if (intent == null) {
-                    val intent1 = Intent()
-                    intent1.data = openPhoto.imageUri
-                    dialog!!.uploadMessage!!.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(resultCode, intent1))
-                } else
-                    dialog!!.uploadMessage!!.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(resultCode, intent))
-
-                dialog!!.uploadMessage = null
-            }
-
-        } else if (requestCode == FILE_CHOOSER_RESULT_CODE) {
-
-            if (null == dialog!!.uploadMessage) return
-            val result = if (intent == null || resultCode != Activity.RESULT_OK) null else intent.data
-            dialog!!.mUploadMessage!!.onReceiveValue(result)
-            dialog!!.mUploadMessage = null
-        }
     }
 
     private val webChromeClient: WebChromeClient = object : WebChromeClient() {
 
         override fun onShowFileChooser(webView: WebView?, filePathCallback: ValueCallback<Array<Uri>>?, fileChooserParams: FileChooserParams?): Boolean {
             uploadMessage = filePathCallback
-            openPhoto.selectImage(context = this@MainActivity)
+            openPhoto.selectImage(context = this@MainActivity){
+                uploadMessage?.onReceiveValue(arrayOf())
+                uploadMessage = null
+            }
             return true;
         }
 
@@ -326,8 +303,12 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
             popup!!.webChromeClient = object : WebChromeClient() {
 
                 override fun onShowFileChooser(webView: WebView?, filePathCallback: ValueCallback<Array<Uri>>?, fileChooserParams: FileChooserParams?): Boolean {
-                    openPhoto.selectImage(context = this@MainActivity)
-                    return true;
+                    uploadMessage = filePathCallback
+                    openPhoto.selectImage(context = this@MainActivity){
+                        uploadMessage?.onReceiveValue(arrayOf())
+                        uploadMessage = null
+                    }
+                    return false;
                 }
 
                 override fun onCloseWindow(window: WebView) {

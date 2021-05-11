@@ -217,29 +217,11 @@ class Dialog(private val context: MainActivity) {
 
         override fun onShowFileChooser(webView: WebView?, filePathCallback: ValueCallback<Array<Uri>>?, fileChooserParams: FileChooserParams?): Boolean {
             uploadMessage = filePathCallback
-            openPhoto.selectImage(context)
-            return true
-        }
-
-        private fun openPermission(): Boolean {
-            return if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
-                openPhoto.selectImage(context)
-                true
-            } else {
-                ActivityCompat.requestPermissions(context, arrayOf(Manifest.permission.CAMERA), CAMERA_PERMISSION)
-                try {
-                    openPhoto.selectImage(context)
-                } catch (e: Exception) {
-                    Toast.makeText(context, "An error has occurred", Toast.LENGTH_SHORT).show()
-                }
-                if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
-                    openPhoto.selectImage(context)
-                    true
-                } else {
-                    uploadMessage = null
-                    false
-                }
+            openPhoto.selectImage(context){
+                uploadMessage?.onReceiveValue(arrayOf())
+                uploadMessage = null
             }
+            return true
         }
     }
 

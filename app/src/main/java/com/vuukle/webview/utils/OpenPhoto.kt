@@ -36,14 +36,14 @@ class OpenPhoto {
         return File.createTempFile(pictureFile, FILE_EXTENSION, storageDir)
     }
 
-    fun selectImage(context: Context) {
+    fun selectImage(context: Context, onCancel: (() -> Unit)? = null) {
 
-        val options = arrayOf<CharSequence>(context.getString(R.string.take_photo), context.getString(R.string.choose_from_gallery), context.getString(R.string.cancel))
+        val options = arrayOf<CharSequence>(/*context.getString(R.string.take_photo),*/ context.getString(R.string.choose_from_gallery), context.getString(R.string.cancel))
         val builder = AlertDialog.Builder(context)
         builder.setTitle(context.getString(R.string.choose_your_profile_picture))
         builder.setItems(options) { dialog: DialogInterface, item: Int ->
             when {
-                options[item] == context.getString(R.string.take_photo) -> {
+                /*options[item] == context.getString(R.string.take_photo) -> {
                     val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
                     var photo: File? = null
                     try {
@@ -58,7 +58,7 @@ class OpenPhoto {
                     intent.putExtra(MediaStore.EXTRA_OUTPUT,
                             imageUri)
                     (context as MainActivity).startActivityForResult(intent, MainActivity.REQUEST_SELECT_FILE)
-                }
+                }*/
                 options[item] == context.getString(R.string.choose_from_gallery) -> {
                     try {
                         val pickPhoto = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
@@ -69,6 +69,7 @@ class OpenPhoto {
                 }
                 options[item] == context.getString(R.string.cancel) -> {
                     dialog.dismiss()
+                    onCancel?.invoke()
                 }
             }
         }
