@@ -1,10 +1,18 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
+def apikeyPropertiesFile = rootProject.file("apikey.properties")
+def apikeyProperties = new Properties()
+apikeyProperties.load(new FileInputStream(apikeyPropertiesFile))
+
 android {
     compileSdkVersion 30
     buildToolsVersion '28.0.3'
     defaultConfig {
+        // publisher public and private keys
+        buildConfigField("String", "PUBLISHER_PUBLIC_KEY", apikeyProperties['PUBLISHER_PUBLIC_KEY'])
+        buildConfigField("String", "PUBLISHER_PRIVATE_KEY", apikeyProperties['PUBLISHER_PRIVATE_KEY'])
+
         applicationId "com.example.pc_5.vuukleweb"
         minSdkVersion 19
         targetSdkVersion 30
@@ -37,6 +45,8 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
     // Permission library
     implementation 'com.karumi:dexter:5.0.0'
+    // Gson
+    implementation 'com.google.code.gson:gson:2.8.6'
 }
 repositories {
     mavenCentral()

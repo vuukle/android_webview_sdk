@@ -111,6 +111,7 @@ class Dialog(private val context: MainActivity) {
         if (openDialog) {
             openDialog = false
             wrapper = LinearLayout(context)
+            wrapper?.minimumHeight = 200
             val keyboardHack = EditText(context)
             keyboardHack.visibility = View.GONE
             wrapper!!.orientation = LinearLayout.VERTICAL

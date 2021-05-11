@@ -3,6 +3,7 @@ package com.vuukle.webview
 import android.Manifest
 import android.app.Activity
 import android.app.AlertDialog
+import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -14,6 +15,7 @@ import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.webkit.*
 import android.webkit.WebView.WebViewTransport
+import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -25,6 +27,8 @@ import com.karumi.dexter.listener.PermissionGrantedResponse
 import com.karumi.dexter.listener.PermissionRequest
 import com.karumi.dexter.listener.single.PermissionListener
 import com.vuukle.webview.ext.needOpenWithOther
+import com.vuukle.webview.manager.auth.AuthManager
+import com.vuukle.webview.manager.url.UrlManager
 import com.vuukle.webview.utils.Dialog
 import com.vuukle.webview.utils.ListenerModalWindow
 import com.vuukle.webview.utils.OpenPhoto
@@ -32,16 +36,14 @@ import com.vuukle.webview.utils.OpenSite
 
 
 class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListener {
-    //URL for loading into WebView
-    private val COMMENTS_URL = "https://cdn.vuukle.com/amp.html?url=https%3A%2F%2Fwww.prowrestling.com%2Fimpact-wrestling-results-1282020%2F&host=prowrestling.com&id=1196371&apiKey=46489985-43ef-48ed-9bfd-61971e6af217&img=https%3A%2F%2Fwww.prowrestling.com%2Fwp-content%2Fuploads%2F2020%2F12%2FKenny-Omega-Impact-Wrestling.jpeg&title=IMPACT%2BWrestling%2BResults%2B%252812%252F8%2529%253A%2BKenny%2BOmega%2BSpeaks%252C%2BKnockouts%2BTag%2BTournament%2BContinues%2521&tags=Featured"
-    private val POWERBAR_URL = "https://cdntest.vuukle.com/widgets/powerbar.html?amp=false&apiKey=664e0b85-5b2c-4881-ba64-3aa9f992d01c&host=relaxed-beaver-76304e.netlify.com&articleId=Index&img=https%3A%2F%2Fwww.gettyimages.ie%2Fgi-resources%2Fimages%2FHomepage%2FHero%2FUK%2FCMS_Creative_164657191_Kingfisher.jpg&title=Index&url=https%3A%2F%2Frelaxed-beaver-76304e.netlify.app%2F&tags=123&author=123&lang=en&gr=false&darkMode=false&defaultEmote=1&items=&standalone=0&mode=horizontal"
+
+    // Auth Manager
+    private val authManager = AuthManager(this)
+    //URL manager for get urls loading into WebView
+    private val urlManager = UrlManager(this)
+
     private val PERMISSION_REQUEST_CODE = 200
 
-    //login name
-    var name = "Alex"
-
-    //login email
-    var email = "email@test.com"
     var popup: WebView? = null
 
     //WebView
@@ -63,6 +65,31 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
         dialog?.addCloseListener() {
             mWebViewComments?.reload()
         }
+
+        getSharedPreferences("asd", Context.MODE_PRIVATE)
+
+        findViewById<Button>(R.id.login_by_sso).setOnClickListener {
+            loginBySSO("mous@email.com", "Sample User Name")
+        }
+
+        findViewById<Button>(R.id.logout_by_sso).setOnClickListener {
+            logoutSSO()
+        }
+    }
+
+    private fun loginBySSO(email: String, userName: String) {
+
+        authManager.login(email, userName)
+        mWebViewComments?.clearHistory()
+        mWebViewComments?.loadUrl(urlManager.getCommentsUrl())
+    }
+
+    private fun logoutSSO(){
+
+        authManager.logout()
+        CookieManager.getInstance().removeAllCookie()
+        mWebViewComments?.clearHistory()
+        mWebViewComments?.loadUrl(urlManager.getCommentsUrl())
     }
 
     private fun requestPermission() {
@@ -123,9 +150,8 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
             CookieManager.getInstance().setAcceptThirdPartyCookies(mWebViewComments, true)
         } else CookieManager.getInstance().setAcceptCookie(true)
         //load url to display in webView
-        mWebViewComments?.loadUrl(COMMENTS_URL)
-        mWebViewPowerBar?.loadUrl(POWERBAR_URL)
-
+        mWebViewComments?.loadUrl(urlManager.getCommentsUrl())
+        mWebViewPowerBar?.loadUrl(urlManager.getPowerBarUrl())
     }
 
     override fun onBackPressed() {
@@ -214,13 +240,14 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
     }
 
     private val webChromeClient: WebChromeClient = object : WebChromeClient() {
+
         override fun onConsoleMessage(consoleMessage: ConsoleMessage): Boolean {
-            Log.d("consoleJs", consoleMessage.message())
+           /* Log.d("consoleJs", consoleMessage.message())
             //Listening for console message that contains "Comments initialized!" string
             if (consoleMessage.message().contains("Comments initialized!")) {
                 //signInUser(name, email) - javascript function implemented on a page
                 mWebViewComments!!.loadUrl("javascript:signInUser('$name', '$email')")
-            }
+            }*/
             return super.onConsoleMessage(consoleMessage)
         }
 
