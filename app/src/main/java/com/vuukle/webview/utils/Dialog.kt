@@ -1,25 +1,20 @@
 package com.vuukle.webview.utils
 
-import android.Manifest
 import android.app.AlertDialog
 import android.content.DialogInterface
-import android.content.Intent
-import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Message
 import android.util.Log
-import android.view.Gravity
 import android.view.KeyEvent
 import android.view.View
-import android.view.ViewGroup
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
-import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import android.webkit.*
 import android.webkit.WebView.WebViewTransport
-import android.widget.*
+import android.widget.EditText
+import android.widget.LinearLayout
+import android.widget.ProgressBar
+import android.widget.RelativeLayout
 import android.widget.RelativeLayout.TRUE
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
 import com.vuukle.webview.MainActivity
 
 class Dialog(private val context: MainActivity) {
@@ -194,24 +189,33 @@ class Dialog(private val context: MainActivity) {
     private val webChromeClient: WebChromeClient = object : WebChromeClient() {
 
         override fun onCreateWindow(view: WebView, isDialog: Boolean, isUserGesture: Boolean, resultMsg: Message): Boolean {
+
+            val transport = resultMsg.obj as WebViewTransport
+            view.settings.setSupportMultipleWindows(true)
             webView = WebView(context)
-            webView!!.settings.javaScriptEnabled = true
-            webView!!.settings.pluginState = WebSettings.PluginState.ON
-            webView!!.settings.setSupportMultipleWindows(false)
-            webView!!.layoutParams = view.layoutParams
-            webView!!.settings.userAgentString = view.settings.userAgentString.replace("; wv", "")
-            view.webViewClient = object : WebViewClient() {
+            transport.webView = webView
+            resultMsg.sendToTarget()
+            webView?.webViewClient = object : WebViewClient() {
                 override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
-                    webView!!.loadUrl(url)
+
+                    if (url.contains("mailto:to") || url.contains("mailto:")) {
+                        openSite!!.openApp(url)
+                    } else if (url.contains("whatsapp://send") || url.contains("fb-messenger") && popup != null) {
+                        openSite!!.openWhatsApp(url, popup!!)
+                        openSite!!.openMessenger(url)
+                    } else if (url.contains("tg:msg_url")) {
+                        openSite!!.openApp(url)
+                    } else if (url.contains(MainActivity.CONSENT)) {
+                        showLoader(true)
+                        popup!!.loadUrl(url)
+                        Log.i(MainActivity.TAG, "Clicked url: $url")
+                    } else {
+                        showLoader(true)
+                        popup!!.loadUrl(url)
+                    }
                     return true
                 }
             }
-            wrapper!!.removeView(popup)
-            wrapper!!.addView(webView, LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT)
-            initDialog(wrapper)
-            val transport = resultMsg.obj as WebViewTransport
-            transport.webView = view
-            resultMsg.sendToTarget()
             return true
         }
 
