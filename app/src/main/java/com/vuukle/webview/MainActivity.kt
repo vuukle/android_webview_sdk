@@ -146,7 +146,6 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
         dialog = Dialog(this)
         //initialising webView
         configWebView()
-
         //cookie
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             CookieManager.getInstance().setAcceptThirdPartyCookies(mWebViewComments, true)
@@ -168,15 +167,21 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
     private fun configWebView() {
         //javascript support
 
-        mWebViewPowerBar!!.settings.javaScriptEnabled = true
-        mWebViewPowerBar!!.settings.domStorageEnabled = true
-        mWebViewPowerBar!!.settings.setSupportMultipleWindows(true)
-        mWebViewPowerBar!!.webChromeClient = webChromeClient
-        mWebViewPowerBar!!.webViewClient = object : WebViewClient() {
+        mWebViewPowerBar?.settings?.javaScriptEnabled = true
+        mWebViewPowerBar?.settings?.domStorageEnabled = true
+        mWebViewPowerBar?.settings?.setSupportMultipleWindows(false)
+        mWebViewPowerBar?.settings?.setSupportZoom(false)
+        mWebViewPowerBar?.settings?.allowFileAccess = true
+        mWebViewPowerBar?.settings?.allowContentAccess = true
+        mWebViewPowerBar?.scrollBarStyle = View.SCROLLBARS_INSIDE_OVERLAY
+        mWebViewPowerBar?.settings?.pluginState = WebSettings.PluginState.ON;
+        mWebViewPowerBar?.webChromeClient = webChromeClient
+        mWebViewPowerBar?.settings?.userAgentString = System.getProperty("http.agent")
+                ?: "Mozilla/5.0 (Linux; Android 11) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.91 Mobile Safari/537.36"
+        mWebViewPowerBar?.webViewClient = object : WebViewClient() {
 
             override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
                 //Clicked url
-                Log.d(TAG, "Clicked url: $url")
                 if (openSite!!.isOpenSupportInBrowser(url)) {
                     openSite!!.openPrivacyPolicy(url)
                 } else if (url.contains("mailto:to") || url.contains("mailto:")) {
@@ -194,6 +199,8 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
         mWebViewComments?.settings?.javaScriptEnabled = true
         mWebViewComments?.settings?.domStorageEnabled = true
         mWebViewComments?.settings?.setSupportZoom(false)
+        mWebViewComments?.settings?.userAgentString = System.getProperty("http.agent")
+                ?: "Mozilla/5.0 (Linux; Android 11) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.91 Mobile Safari/537.36"
         mWebViewComments?.settings?.allowFileAccess = true
         mWebViewComments?.settings?.allowContentAccess = true
         mWebViewComments?.scrollBarStyle = View.SCROLLBARS_INSIDE_OVERLAY
@@ -202,6 +209,9 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
         mWebViewComments?.settings?.mediaPlaybackRequiresUserGesture = false;
         mWebViewComments!!.webViewClient = object : WebViewClient() {
 
+            override fun onPageFinished(view: WebView?, url: String?) {
+                mWebViewPowerBar?.reload()
+            }
 
             override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
                 //Clicked url
@@ -225,7 +235,6 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
         super.onActivityResult(requestCode, resultCode, intent)
 
         if (CAMERA_PERMISSION == resultCode && requestCode == Activity.RESULT_OK) openPhoto.selectImage(this@MainActivity)
-
 
         if (requestCode == REQUEST_SELECT_FILE) {
             val result = if (intent == null || resultCode != Activity.RESULT_OK) null else intent.data
@@ -267,6 +276,9 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
             popup!!.settings.pluginState = WebSettings.PluginState.ON
             popup!!.settings.setSupportMultipleWindows(true)
             popup!!.layoutParams = view.layoutParams
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                CookieManager.getInstance().setAcceptThirdPartyCookies(popup, true)
+            };
             popup!!.settings.userAgentString = popup!!.settings.userAgentString.replace("; wv", "")
             val urlLast = arrayOf("")
             popup!!.webViewClient = object : WebViewClient() {

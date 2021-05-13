@@ -15,11 +15,11 @@ fun String.needOpenWithOther(): Boolean {
             this.contains("mailto:") ||
             this.contains("tg:msg_url") ||
             this.contains("share.flipboard.com")
+
     return if (!needWithOther) {
         false
     } else {
-        OpenSite(AppApplication.mContext)
-                .openApp(this)
+        OpenSite(AppApplication.mContext).openApp(this)
         true
     }
 }

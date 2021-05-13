@@ -2,7 +2,9 @@ package com.vuukle.webview.utils
 
 import android.app.AlertDialog
 import android.content.DialogInterface
+import android.graphics.Color
 import android.net.Uri
+import android.os.Build
 import android.os.Message
 import android.util.Log
 import android.view.KeyEvent
@@ -10,12 +12,11 @@ import android.view.View
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.webkit.*
 import android.webkit.WebView.WebViewTransport
-import android.widget.EditText
-import android.widget.LinearLayout
-import android.widget.ProgressBar
-import android.widget.RelativeLayout
+import android.widget.*
 import android.widget.RelativeLayout.TRUE
+import androidx.annotation.RequiresApi
 import com.vuukle.webview.MainActivity
+
 
 class Dialog(private val context: MainActivity) {
 
@@ -25,6 +26,7 @@ class Dialog(private val context: MainActivity) {
     private var popup: WebView? = null
     private var webView: WebView? = null
     private var onCloseListener: DialogCancelListener? = null
+    private var mWebviewPop: WebView? = null
 
     @JvmField
     var uploadMessage: ValueCallback<Array<Uri>>? = null
@@ -41,7 +43,6 @@ class Dialog(private val context: MainActivity) {
     }
 
     fun openDialogOther(url: String?) {
-
         openSite = OpenSite(context)
         popup = WebView(context)
         popup!!.settings.pluginState = WebSettings.PluginState.ON
@@ -50,6 +51,8 @@ class Dialog(private val context: MainActivity) {
         popup!!.settings.javaScriptEnabled = true
         popup!!.settings.builtInZoomControls = true
         popup!!.settings.setAppCacheEnabled(true)
+        popup!!.settings.javaScriptCanOpenWindowsAutomatically = true
+        popup!!.settings.allowFileAccess = true
         popup!!.settings.loadsImagesAutomatically = true
         popup!!.settings.userAgentString = System.getProperty("http.agent")
                 ?: "Mozilla/5.0 (Linux; Android 11) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.91 Mobile Safari/537.36"
@@ -83,13 +86,8 @@ class Dialog(private val context: MainActivity) {
                     openSite!!.openMessenger(url)
                 } else if (url.contains("tg:msg_url")) {
                     openSite!!.openApp(url)
-                } else if (url.contains(MainActivity.CONSENT)) {
-                    showLoader(true)
-                    popup!!.loadUrl(url)
-                    Log.i(MainActivity.TAG, "Clicked url: $url")
-                } else {
-                    showLoader(true)
-                    popup!!.loadUrl(url)
+                }else {
+                    return super.shouldOverrideUrlLoading(view, url)
                 }
 
                 return true
@@ -186,46 +184,77 @@ class Dialog(private val context: MainActivity) {
         if (dialog != null) if (popup != null && popup!!.canGoBack()) popup!!.goBack() else close()
     }
 
-    private val webChromeClient: WebChromeClient = object : WebChromeClient() {
+    val webChromeClient: WebChromeClient = object : WebChromeClient() {
 
         override fun onCreateWindow(view: WebView, isDialog: Boolean, isUserGesture: Boolean, resultMsg: Message): Boolean {
 
-            val transport = resultMsg.obj as WebViewTransport
-            view.settings.setSupportMultipleWindows(true)
-            webView = WebView(context)
-            transport.webView = webView
-            resultMsg.sendToTarget()
-            webView?.webViewClient = object : WebViewClient() {
-                override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
+            mWebviewPop = WebView(context)
+            mWebviewPop?.settings?.setSupportMultipleWindows(true)
+            mWebviewPop?.settings?.domStorageEnabled = true
+            mWebviewPop?.settings?.javaScriptEnabled = true
+            mWebviewPop?.settings?.builtInZoomControls = true
+            mWebviewPop?.settings?.setAppCacheEnabled(true)
+            mWebviewPop?.settings?.javaScriptCanOpenWindowsAutomatically = true
+            mWebviewPop?.settings?.allowFileAccess = true
+            mWebviewPop?.settings?.loadsImagesAutomatically = true
+            mWebviewPop?.settings?.userAgentString = System.getProperty("http.agent")
+                    ?: "Mozilla/5.0 (Linux; Android 11) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.91 Mobile Safari/537.36"
+            mWebviewPop?.layoutParams = FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT)
+            mWebviewPop?.webViewClient = object: WebViewClient() {
+                override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
 
-                    if (url.contains("mailto:to") || url.contains("mailto:")) {
+                    val url = view?.url ?: ""
+
+                    return if (url.contains("mailto:to") || url.contains("mailto:")) {
                         openSite!!.openApp(url)
+                        removeMPopupView()
+                        true
                     } else if (url.contains("whatsapp://send") || url.contains("fb-messenger") && popup != null) {
                         openSite!!.openWhatsApp(url, popup!!)
                         openSite!!.openMessenger(url)
+                        removeMPopupView()
+                        true
                     } else if (url.contains("tg:msg_url")) {
                         openSite!!.openApp(url)
-                    } else if (url.contains(MainActivity.CONSENT)) {
-                        showLoader(true)
-                        popup!!.loadUrl(url)
-                        Log.i(MainActivity.TAG, "Clicked url: $url")
-                    } else {
-                        showLoader(true)
-                        popup!!.loadUrl(url)
+                        removeMPopupView()
+                        true
+                    }else {
+                        super.shouldOverrideUrlLoading(view, request)
                     }
-                    return true
                 }
             }
+            mWebviewPop?.webChromeClient = object: WebChromeClient() {
+                override fun onCloseWindow(window: WebView?) {
+                    removeMPopupView()
+                    super.onCloseWindow(window)
+                }
+            }
+            wrapper?.addView(mWebviewPop)
+            val transport = resultMsg.obj as WebViewTransport
+            transport.webView = mWebviewPop
+            resultMsg.sendToTarget()
             return true
         }
 
-        override fun onShowFileChooser(webView: WebView?, filePathCallback: ValueCallback<Array<Uri>>?, fileChooserParams: FileChooserParams?): Boolean {
+        override fun onCloseWindow(window: WebView?) {
+            super.onCloseWindow(window)
+            removeMPopupView()
+        }
+
+        override fun onShowFileChooser(webView: WebView?, filePathCallback: ValueCallback<Array<Uri>>?, fileChooserParams: WebChromeClient.FileChooserParams?): Boolean {
             uploadMessage = filePathCallback
             openPhoto.selectImage(context){
                 uploadMessage?.onReceiveValue(arrayOf())
                 uploadMessage = null
             }
             return true
+        }
+    }
+
+    private fun removeMPopupView(){
+
+        mWebviewPop?.let{
+            wrapper?.removeView(it)
         }
     }
 
