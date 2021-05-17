@@ -15,7 +15,12 @@ class OpenSite(private val context: Context) {
 
         var url = url
         url = decodeUrl(url)
-        if (!url.contains("whatsapp://send") && !url.contains("fb-messenger")) view.loadUrl(url) else if (url.contains("whatsapp://send")) openApp("https://api.whatsapp.com" + url.substring(url.indexOf("://") + 2))
+        if (!url.contains("whatsapp://send") && !url.contains("fb-messenger") && !url.contains("web.whatsapp.com/send?text="))
+            view.loadUrl(url)
+        else if (url.contains("whatsapp://send"))
+            openApp("https://api.whatsapp.com" + url.substring(url.indexOf("://") + 2))
+        else if (url.contains("web.whatsapp.com/send?text="))
+            openApp("https://api.whatsapp.com" + url.substring(url.indexOf("web.whatsapp.com") + "web.whatsapp.com".length))
     }
 
     fun openMessenger(url: String) {

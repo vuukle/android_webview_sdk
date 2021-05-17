@@ -151,6 +151,7 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
             CookieManager.getInstance().setAcceptThirdPartyCookies(mWebViewComments, true)
         } else CookieManager.getInstance().setAcceptCookie(true)
         //load url to display in webView
+
         mWebViewComments?.loadUrl(urlManager.getCommentsUrl())
         mWebViewPowerBar?.loadUrl(urlManager.getPowerBarUrl())
     }
@@ -182,7 +183,11 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
 
             override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
                 //Clicked url
-                if (openSite!!.isOpenSupportInBrowser(url)) {
+                if (url.contains("whatsapp://send") || url.contains("https://web.whatsapp.com/send?text=") || url.contains("fb-messenger") && popup != null) {
+                    openSite!!.openWhatsApp(url, mWebViewComments!!)
+                } else if (url.contains("tg:msg_url")) {
+                    openSite!!.openApp(url)
+                }else if (openSite!!.isOpenSupportInBrowser(url)) {
                     openSite!!.openPrivacyPolicy(url)
                 } else if (url.contains("mailto:to") || url.contains("mailto:")) {
                     openSite!!.openApp(url)
