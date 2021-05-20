@@ -219,13 +219,17 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
             }
 
             override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
+
                 //Clicked url
-                Log.i(TAG, "Clicked url: $url")
-                if (openSite!!.isOpenSupportInBrowser(url)) {
+               if (url.contains("whatsapp://send") || url.contains("https://web.whatsapp.com/send?text=") || url.contains("fb-messenger") && popup != null) {
+                    openSite!!.openWhatsApp(url, mWebViewComments!!)
+                } else if (url.contains("tg:msg_url")) {
+                    openSite!!.openApp(url)
+                }else if (openSite!!.isOpenSupportInBrowser(url)) {
                     openSite!!.openPrivacyPolicy(url)
                 } else if (url.contains("mailto:to") || url.contains("mailto:")) {
                     openSite!!.openApp(url)
-                } else {
+                }else {
                     if (!url.needOpenWithOther()) {
                         dialog!!.openDialogOther(url)
                     }
@@ -275,6 +279,7 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
         }
 
         override fun onCreateWindow(view: WebView, isDialog: Boolean, isUserGesture: Boolean, resultMsg: Message): Boolean {
+
             popup = WebView(this@MainActivity)
             popup!!.settings.javaScriptEnabled = true
             popup!!.settings.domStorageEnabled = true
@@ -288,6 +293,23 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
             val urlLast = arrayOf("")
             popup!!.webViewClient = object : WebViewClient() {
                 override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
+
+                    val isOpenApp = if (url.contains("whatsapp://send") || url.contains("https://web.whatsapp.com/send?text=") || url.contains("fb-messenger") && popup != null) {
+                        openSite!!.openWhatsApp(url, mWebViewComments!!)
+                        true
+                    } else if (url.contains("tg:msg_url")) {
+                        openSite!!.openApp(url)
+                        true
+                    }else if (openSite!!.isOpenSupportInBrowser(url)) {
+                        openSite!!.openPrivacyPolicy(url)
+                        true
+                    } else if (url.contains("mailto:to") || url.contains("mailto:")) {
+                        openSite!!.openApp(url)
+                        true
+                    }else false
+
+                    if(isOpenApp) return false
+
                     if (popup != null) {
                         if (url.contains(AUTH) || url.contains(CONSENT)) {
                             if (url.contains(errorTwitter)) dialog!!.close() else {
@@ -303,6 +325,7 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
                             }
                         }
                     }
+
                     checkConsent(url)
                     return true
                 }
