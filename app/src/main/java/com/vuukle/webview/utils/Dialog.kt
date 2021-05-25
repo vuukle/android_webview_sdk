@@ -2,11 +2,8 @@ package com.vuukle.webview.utils
 
 import android.app.AlertDialog
 import android.content.DialogInterface
-import android.graphics.Color
 import android.net.Uri
-import android.os.Build
 import android.os.Message
-import android.util.Log
 import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
@@ -14,9 +11,7 @@ import android.webkit.*
 import android.webkit.WebView.WebViewTransport
 import android.widget.*
 import android.widget.RelativeLayout.TRUE
-import androidx.annotation.RequiresApi
 import com.vuukle.webview.MainActivity
-
 
 class Dialog(private val context: MainActivity) {
 

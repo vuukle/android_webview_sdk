@@ -12,13 +12,16 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Message
 import android.util.Log
+import android.view.MotionEvent
 import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.webkit.*
 import android.webkit.WebView.WebViewTransport
 import android.widget.Button
+import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.Toast
+import androidx.appcompat.app.ActionBar
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -28,6 +31,7 @@ import com.karumi.dexter.listener.PermissionGrantedResponse
 import com.karumi.dexter.listener.PermissionRequest
 import com.karumi.dexter.listener.single.PermissionListener
 import com.vuukle.webview.ext.needOpenWithOther
+import com.vuukle.webview.helper.AnimationHelper
 import com.vuukle.webview.manager.auth.AuthManager
 import com.vuukle.webview.manager.url.UrlManager
 import com.vuukle.webview.utils.Dialog
@@ -48,8 +52,10 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
     var popup: WebView? = null
 
     //WebView
-    var mWebViewComments: WebView? = null
-    var mWebViewPowerBar: WebView? = null
+    var mWebViewComments: VuukleWebView? = null
+    var mWebViewPowerBar: VuukleWebView? = null
+    private lateinit var loginSSOButton: Button
+    private lateinit var logoutSSOButton: Button
     var mContainer: LinearLayout? = null
     var openSite: OpenSite? = null
     var dialog: Dialog? = null
@@ -60,7 +66,52 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         handleOnCreate()
+        setOnScrollListener()
+        createActionBar()
         initOnClicks();
+    }
+
+    private fun setOnScrollListener() {
+
+        var animationLocked = false
+
+        mWebViewComments?.setOnTouchListener {
+            animationLocked = !(it?.actionMasked == MotionEvent.ACTION_UP || it?.actionMasked == MotionEvent.ACTION_CANCEL)
+            if(!animationLocked) checkStatusBarState(mWebViewComments?.scrollY?:0)
+        }
+
+        mWebViewComments?.setOnScrollChangeListener { l, t, oldl, oldt ->
+            if(!animationLocked) checkStatusBarState(t)
+        }
+    }
+
+    private fun checkStatusBarState(scrollY: Int){
+
+        if(scrollY > 0 && mWebViewPowerBar?.tag == "1"){
+            mWebViewPowerBar?.let{
+                AnimationHelper.moveToY(it, 300, -it.height.toFloat()) {
+                    AnimationHelper.changeMarginTop(mWebViewComments!!, 300, 0)
+                }
+            }
+            mWebViewPowerBar?.tag = "0"
+        }else if(scrollY <= 0 && mWebViewPowerBar?.tag == "0") {
+            mWebViewPowerBar?.let{
+                AnimationHelper.moveToY(it, 300, 0F) {
+                    AnimationHelper.changeMarginTop(mWebViewComments!!, 300, it.height)
+                }
+            }
+            mWebViewPowerBar?.tag = "1"
+        }
+    }
+
+    private fun createActionBar() {
+
+        supportActionBar?.displayOptions = ActionBar.DISPLAY_SHOW_CUSTOM
+        supportActionBar?.setDisplayShowCustomEnabled(true)
+        supportActionBar?.setCustomView(R.layout.custom_action_bar_layout)
+        val view = supportActionBar!!.customView
+        loginSSOButton = view.findViewById<Button>(R.id.login_by_sso)
+        logoutSSOButton = view.findViewById<Button>(R.id.logout_by_sso)
     }
 
     private fun initOnClicks() {
@@ -71,11 +122,11 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
 
         getSharedPreferences("asd", Context.MODE_PRIVATE)
 
-        findViewById<Button>(R.id.login_by_sso).setOnClickListener {
+        loginSSOButton.setOnClickListener {
             loginBySSO("sometempmail@yopmail.com", "Sample User Name")
         }
 
-        findViewById<Button>(R.id.logout_by_sso).setOnClickListener {
+        logoutSSOButton.setOnClickListener {
             logoutSSO()
         }
     }
@@ -141,6 +192,7 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
         setContentView(R.layout.activity_main)
         mWebViewComments = findViewById(R.id.activity_main_webview_comments)
         mWebViewPowerBar = findViewById(R.id.activity_main_webview_powerbar)
+        mWebViewPowerBar?.tag = "1"
         mContainer = findViewById(R.id.container)
         openSite = OpenSite(this)
         dialog = Dialog(this)

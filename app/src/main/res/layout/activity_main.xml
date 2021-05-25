@@ -1,56 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
     android:id="@+id/container"
-    android:orientation="vertical"
+    android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="vertical"
     tools:context="com.vuukle.webview.MainActivity">
 
-    <ScrollView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content">
-
-        <LinearLayout
+        <RelativeLayout
             android:layout_width="match_parent"
-            android:layout_height="0dp"
+            android:layout_height="match_parent"
             android:orientation="vertical">
 
-            <LinearLayout
-                android:orientation="horizontal"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content">
-
-                <Button
-                    android:id="@+id/login_by_sso"
-                    android:text="Logn By SSO"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content" />
-
-                <Button
-                    android:id="@+id/logout_by_sso"
-                    android:text="LogOut"
-                    android:layout_marginStart="10dp"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
-
-            </LinearLayout>
-
-            <WebView
-                android:background="@android:color/white"
+            <com.vuukle.webview.VuukleWebView
                 android:id="@+id/activity_main_webview_powerbar"
                 android:layout_width="match_parent"
-                android:layout_height="90dp"/>
+                android:layout_height="90dp" />
 
-            <WebView
+            <com.vuukle.webview.VuukleWebView
                 android:id="@+id/activity_main_webview_comments"
                 android:layout_width="match_parent"
-                android:layout_height="2000dp"
-                tools:layout_editor_absoluteX="8dp"
-                tools:layout_editor_absoluteY="8dp" />
+                android:layout_height="wrap_content"
+                android:layout_marginTop="90dp"
+                android:scrollbars="none" />
 
-        </LinearLayout>
-
-    </ScrollView>
+        </RelativeLayout>
 
 </LinearLayout>
