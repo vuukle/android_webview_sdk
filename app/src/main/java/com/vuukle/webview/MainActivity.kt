@@ -321,12 +321,9 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
         }
 
         override fun onConsoleMessage(consoleMessage: ConsoleMessage): Boolean {
-           /* Log.d("consoleJs", consoleMessage.message())
-            //Listening for console message that contains "Comments initialized!" string
-            if (consoleMessage.message().contains("Comments initialized!")) {
-                //signInUser(name, email) - javascript function implemented on a page
-                mWebViewComments!!.loadUrl("javascript:signInUser('$name', '$email')")
-            }*/
+            if(consoleMessage.message().contains("logout-clicked")){
+                logoutSSO()
+            }
             return super.onConsoleMessage(consoleMessage)
         }
 
