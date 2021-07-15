@@ -77,7 +77,15 @@ mWebViewComments.setWebChromeClient(new WebChromeClient() {
 ----------
 WebView lets you ability to use SSO authentication.
 Example:
-
+```java
+     // Config your private and public keys from BuildConfig.java
+    public final class BuildConfig {
+      
+      // Fields from default config.
+      public static final String PUBLISHER_PRIVATE_KEY = "bd3a64e4-7e19-46b2-****-******";
+      public static final String PUBLISHER_PUBLIC_KEY = "664e0b85-5b2c-4881-****-******";
+    }
+```
 ```kotlin
     // Create authentication manager
     // Auth Manager
