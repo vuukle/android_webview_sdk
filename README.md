@@ -77,8 +77,11 @@ mWebViewComments.setWebChromeClient(new WebChromeClient() {
 ----------
 WebView lets you ability to use SSO authentication.
 Example:
+
 ```java
-     // Config your private and public keys from BuildConfig.java
+    // Article to get your PUBLIC_KEY and PRIVATE_KEY
+    // https://docs.vuukle.com/how-can-i-fetch-my-public-and-private-api-key/
+    // Config your private and public keys from BuildConfig.java
     public final class BuildConfig {
       
       // Fields from default config.
