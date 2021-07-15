@@ -131,18 +131,25 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
         }
     }
 
+    // Login user by SSO using email and username
     private fun loginBySSO(email: String, userName: String) {
-
+        // Login user
         authManager.login(email, userName)
+        // Clear browser history
         mWebViewComments?.clearHistory()
+        // Reload WebView using urlManager
         mWebViewComments?.loadUrl(urlManager.getCommentsUrl())
     }
 
+    // Logout user SSO
     private fun logoutSSO(){
-
+        // Logout user
         authManager.logout()
+        // Clear all cookies
         CookieManager.getInstance().removeAllCookie()
+        // Clear history
         mWebViewComments?.clearHistory()
+        // Reload WebView using urlManager
         mWebViewComments?.loadUrl(urlManager.getCommentsUrl())
     }
 
@@ -203,7 +210,6 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
             CookieManager.getInstance().setAcceptThirdPartyCookies(mWebViewComments, true)
         } else CookieManager.getInstance().setAcceptCookie(true)
         //load url to display in webView
-
         mWebViewComments?.loadUrl(urlManager.getCommentsUrl())
         mWebViewPowerBar?.loadUrl(urlManager.getPowerBarUrl())
     }
