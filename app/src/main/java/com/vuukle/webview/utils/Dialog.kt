@@ -4,6 +4,7 @@ import android.app.AlertDialog
 import android.content.DialogInterface
 import android.net.Uri
 import android.os.Message
+import android.util.Log
 import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
@@ -12,6 +13,7 @@ import android.webkit.WebView.WebViewTransport
 import android.widget.*
 import android.widget.RelativeLayout.TRUE
 import com.vuukle.webview.MainActivity
+import com.vuukle.webview.helper.UrlHelper
 
 class Dialog(private val context: MainActivity) {
 
@@ -69,7 +71,6 @@ class Dialog(private val context: MainActivity) {
                 popup!!.loadUrl(url)
             }
         }
-
         popup!!.webViewClient = object : WebViewClient() {
 
             override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
@@ -82,6 +83,7 @@ class Dialog(private val context: MainActivity) {
                 } else if (url.contains("tg:msg_url")) {
                     openSite!!.openApp(url)
                 }else {
+                    getRedirectUrl(url)
                     return super.shouldOverrideUrlLoading(view, url)
                 }
 
@@ -97,6 +99,11 @@ class Dialog(private val context: MainActivity) {
         initLinearLayout()
     }
 
+    private fun getRedirectUrl(url: String) {
+        val data = UrlHelper.getQueryData(url)
+        println()
+    }
+
     private fun initLinearLayout() {
 
         if (openDialog) {
@@ -108,11 +115,11 @@ class Dialog(private val context: MainActivity) {
             wrapper?.addView(popup, LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT)
             wrapper?.addView(keyboardHack, LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
             initDialog(wrapper)
+            initProgressBar()
         }
-        initProgressBar()
     }
 
-    private fun showLoader(show: Boolean) {
+    fun showLoader(show: Boolean) {
         if (show) {
             progressBar?.visibility = View.VISIBLE
         } else {
@@ -243,6 +250,10 @@ class Dialog(private val context: MainActivity) {
                 uploadMessage = null
             }
             return true
+        }
+
+        override fun onConsoleMessage(consoleMessage: ConsoleMessage?): Boolean {
+            return super.onConsoleMessage(consoleMessage)
         }
     }
 

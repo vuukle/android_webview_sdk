@@ -1,4 +1,4 @@
-package com.vuukle.webview
+    package com.vuukle.webview
 
 import android.Manifest
 import android.app.Activity
@@ -11,14 +11,12 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Message
-import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.webkit.*
 import android.webkit.WebView.WebViewTransport
 import android.widget.Button
-import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.appcompat.app.ActionBar
@@ -32,15 +30,13 @@ import com.karumi.dexter.listener.PermissionRequest
 import com.karumi.dexter.listener.single.PermissionListener
 import com.vuukle.webview.ext.needOpenWithOther
 import com.vuukle.webview.helper.AnimationHelper
+import com.vuukle.webview.helper.UrlHelper
 import com.vuukle.webview.manager.auth.AuthManager
 import com.vuukle.webview.manager.url.UrlManager
-import com.vuukle.webview.utils.Dialog
-import com.vuukle.webview.utils.ListenerModalWindow
-import com.vuukle.webview.utils.OpenPhoto
-import com.vuukle.webview.utils.OpenSite
+import com.vuukle.webview.utils.*
 
 
-class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListener {
+    class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListener {
 
     // Auth Manager
     private val authManager = AuthManager(this)
@@ -117,7 +113,7 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
     private fun initOnClicks() {
 
         dialog?.addCloseListener() {
-            mWebViewComments?.reload()
+            //mWebViewComments?.reload()
         }
 
         getSharedPreferences("asd", Context.MODE_PRIVATE)
@@ -258,7 +254,6 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
             }
         }
 
-
         mWebViewComments?.settings?.javaScriptEnabled = true
         mWebViewComments?.settings?.domStorageEnabled = true
         mWebViewComments?.settings?.setSupportZoom(false)
@@ -270,9 +265,12 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
         mWebViewComments!!.webChromeClient = webChromeClient
         mWebViewComments?.settings?.pluginState = WebSettings.PluginState.ON;
         mWebViewComments?.settings?.mediaPlaybackRequiresUserGesture = false;
+        mWebViewComments?.settings?.setSupportMultipleWindows(true)
+
         mWebViewComments!!.webViewClient = object : WebViewClient() {
 
             override fun onPageFinished(view: WebView?, url: String?) {
+                super.onPageFinished(view, url)
                 mWebViewPowerBar?.reload()
             }
 
@@ -347,6 +345,12 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
             popup!!.settings.userAgentString = popup!!.settings.userAgentString.replace("; wv", "")
             val urlLast = arrayOf("")
             popup!!.webViewClient = object : WebViewClient() {
+
+                override fun onPageFinished(view: WebView?, url: String?) {
+                    dialog?.showLoader(false)
+                    super.onPageFinished(view, url)
+                }
+
                 override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
 
                     val isOpenApp = if (url.contains("whatsapp://send") || url.contains("https://web.whatsapp.com/send?text=") || url.contains("fb-messenger") && popup != null) {
@@ -396,6 +400,15 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
             }
 
             popup!!.webChromeClient = object : WebChromeClient() {
+
+                override fun onCreateWindow(
+                    view: WebView?,
+                    isDialog: Boolean,
+                    isUserGesture: Boolean,
+                    resultMsg: Message?
+                ): Boolean {
+                    return super.onCreateWindow(view, isDialog, isUserGesture, resultMsg)
+                }
 
                 override fun onShowFileChooser(webView: WebView?, filePathCallback: ValueCallback<Array<Uri>>?, fileChooserParams: FileChooserParams?): Boolean {
                     uploadMessage = filePathCallback
