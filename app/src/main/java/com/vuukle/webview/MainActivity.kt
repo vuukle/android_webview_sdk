@@ -19,6 +19,7 @@ import android.webkit.WebView.WebViewTransport
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.ActionBar
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -329,6 +330,11 @@ import com.vuukle.webview.utils.*
                 logoutSSO()
             }
             return super.onConsoleMessage(consoleMessage)
+        }
+
+        @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
+        override fun onPermissionRequest(request: android.webkit.PermissionRequest?) {
+            request?.grant(request.resources)
         }
 
         override fun onCreateWindow(view: WebView, isDialog: Boolean, isUserGesture: Boolean, resultMsg: Message): Boolean {
