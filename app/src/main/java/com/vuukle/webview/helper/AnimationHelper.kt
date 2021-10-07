@@ -48,7 +48,10 @@ object AnimationHelper {
             val value = va.animatedValue.toString().toInt()
             params.topMargin = value
             view.layoutParams = params
-            if(value == finalMargin) view.clearAnimation()
+            if(value == finalMargin) {
+                view.clearAnimation()
+                onFinish?.invoke()
+            }
         }
         va.start()
     }

@@ -11,6 +11,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Message
+import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import android.view.inputmethod.InputMethodManager
@@ -18,6 +19,7 @@ import android.webkit.*
 import android.webkit.WebView.WebViewTransport
 import android.widget.Button
 import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.ActionBar
@@ -39,7 +41,7 @@ import com.vuukle.webview.utils.*
 
     class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListener {
 
-    // Auth Manager
+        // Auth Manager
     private val authManager = AuthManager(this)
     //URL manager for get urls loading into WebView
     private val urlManager = UrlManager(this)
@@ -51,6 +53,7 @@ import com.vuukle.webview.utils.*
     //WebView
     var mWebViewComments: VuukleWebView? = null
     var mWebViewPowerBar: VuukleWebView? = null
+    var mContentContainer: ScrollView? = null
     private lateinit var loginSSOButton: Button
     private lateinit var logoutSSOButton: Button
     var mContainer: LinearLayout? = null
@@ -76,9 +79,25 @@ import com.vuukle.webview.utils.*
             animationLocked = !(it?.actionMasked == MotionEvent.ACTION_UP || it?.actionMasked == MotionEvent.ACTION_CANCEL)
             if(!animationLocked) checkStatusBarState(mWebViewComments?.scrollY?:0)
         }
-
+        var isScrollable = true
+        mWebViewComments?.setOnTouchListener {
+            isScrollable = true
+        }
         mWebViewComments?.setOnScrollChangeListener { l, t, oldl, oldt ->
-            if(!animationLocked) checkStatusBarState(t)
+
+            val contentHeight = mWebViewComments?.contentHeight?:0
+            val delta = contentHeight + 410
+
+            if(!isScrollable){
+                mWebViewComments?.scrollY = delta
+            }
+
+            if(t >= delta && mWebViewPowerBar?.tag == "1"){
+                mWebViewComments?.scrollY = delta
+                isScrollable = false
+            }else{
+                if(!animationLocked) checkStatusBarState(t)
+            }
         }
     }
 
@@ -87,17 +106,20 @@ import com.vuukle.webview.utils.*
         if(scrollY > 0 && mWebViewPowerBar?.tag == "1"){
             mWebViewPowerBar?.let{
                 AnimationHelper.moveToY(it, 300, -it.height.toFloat()) {
-                    AnimationHelper.changeMarginTop(mWebViewComments!!, 300, 0)
+                    AnimationHelper.changeMarginTop(mWebViewComments!!, 300, 0){
+                        mWebViewPowerBar?.tag = "0"
+                    }
                 }
             }
-            mWebViewPowerBar?.tag = "0"
+
         }else if(scrollY <= 0 && mWebViewPowerBar?.tag == "0") {
             mWebViewPowerBar?.let{
                 AnimationHelper.moveToY(it, 300, 0F) {
-                    AnimationHelper.changeMarginTop(mWebViewComments!!, 300, it.height)
+                    AnimationHelper.changeMarginTop(mWebViewComments!!, 300, it.height){
+                        mWebViewPowerBar?.tag = "1"
+                    }
                 }
             }
-            mWebViewPowerBar?.tag = "1"
         }
     }
 
@@ -156,6 +178,7 @@ import com.vuukle.webview.utils.*
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+
         when (requestCode) {
             PERMISSION_REQUEST_CODE -> if (grantResults.size > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 Toast.makeText(applicationContext, "Permission Granted", Toast.LENGTH_SHORT).show()
@@ -235,6 +258,7 @@ import com.vuukle.webview.utils.*
         mWebViewPowerBar?.settings?.userAgentString = System.getProperty("http.agent")
                 ?: "Mozilla/5.0 (Linux; Android 11) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.91 Mobile Safari/537.36"
         mWebViewPowerBar?.webViewClient = object : WebViewClient() {
+
 
             override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
                 //Clicked url
@@ -326,8 +350,19 @@ import com.vuukle.webview.utils.*
         }
 
         override fun onConsoleMessage(consoleMessage: ConsoleMessage): Boolean {
+
             if(consoleMessage.message().contains("logout-clicked")){
                 logoutSSO()
+            }else if(consoleMessage.message().contains("sso-sign-in")){
+                AlertDialog.Builder(this@MainActivity)
+                    .setMessage("Sign in button clicked")
+                    .setPositiveButton("OK", object: DialogInterface.OnClickListener {
+                        override fun onClick(dialog: DialogInterface?, which: Int) {
+
+                        }
+                    })
+                    .create()
+                    .show()
             }
             return super.onConsoleMessage(consoleMessage)
         }

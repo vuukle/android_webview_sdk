@@ -9,7 +9,7 @@ class UrlManager(activity: AppCompatActivity) {
 
     fun getCommentsUrl(): String {
 
-        val url = "https://cdntest.vuukle.com/amp.html?url=https%3A%2F%2Fangry-hermann-1e0239.netlify.app%2F&host=angry-hermann-1e0239.netlify.app&id=123ggg45gerrge09876&apiKey=80355907-6cca-4663-97c0-081020788dd7&img=https%3A%2F%2Fpixabay.com%2Fen%2Fimage-statue-brass-child-art-1465348&title=test&tags=Featured"
+        val url = "https://cdntest.vuukle.com/amp.html?url=https://romantic-villani-2fc571.netlify.app&host=romantic-villani-2fc571.netlify.app&id=123ggg45gerrge09876&apiKey=664e0b85-5b2c-4881-ba64-3aa9f992d01c&title=Aryaasdas123ff&title=test&img=https://pixabay.com/en/image-statue-brass-child-art-1465348&sso=true&sdk=true"
 
         return if(authManager.isLoggedIn()){
             url.plus("&sso=true&loginToken=${authManager.getToken()}")
