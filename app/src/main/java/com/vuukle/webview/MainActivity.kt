@@ -85,8 +85,8 @@ import com.vuukle.webview.utils.*
         }
         mWebViewComments?.setOnScrollChangeListener { l, t, oldl, oldt ->
 
-            val contentHeight = mWebViewComments?.contentHeight?:0
-            val delta = contentHeight + 410
+            val contentHeight = mWebViewComments?.contentHeight?:mWebViewComments?.measuredHeight?:0
+            val delta = contentHeight + 100
 
             if(!isScrollable){
                 mWebViewComments?.scrollY = delta

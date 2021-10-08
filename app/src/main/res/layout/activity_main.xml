@@ -12,15 +12,13 @@
         android:layout_height="match_parent"
         android:orientation="vertical">
 
-
         <com.vuukle.webview.VuukleWebView
             android:id="@+id/activity_main_webview_comments"
             android:layout_width="match_parent"
             android:overScrollMode="never"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             android:layout_marginTop="90dp"
             android:scrollbars="none" />
-
 
         <com.vuukle.webview.VuukleWebView
             android:id="@+id/activity_main_webview_powerbar"
