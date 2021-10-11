@@ -566,3 +566,27 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
     }
 }
 ```
+
+
+### 11) Customize SSO Button Click
+__________
+
+We can add condition from onConsoleMessage function.
+
+```kotlin
+override fun onConsoleMessage(consoleMessage: ConsoleMessage): Boolean {
+
+   if (consoleMessage.message().contains("logout-clicked")) {
+       logoutSSO()
+   } else if (consoleMessage.message().contains("sso-sign-in")) {
+       AlertDialog.Builder(this@MainActivity)
+           .setMessage("Sign in button clicked")
+           .setPositiveButton(
+               "OK"
+           ) { _, _ -> }
+           .create()
+           .show()
+   }
+   return super.onConsoleMessage(consoleMessage)
+}
+```

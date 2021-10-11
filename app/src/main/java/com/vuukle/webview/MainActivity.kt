@@ -11,7 +11,6 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Message
-import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import android.view.inputmethod.InputMethodManager
@@ -33,7 +32,6 @@ import com.karumi.dexter.listener.PermissionRequest
 import com.karumi.dexter.listener.single.PermissionListener
 import com.vuukle.webview.ext.needOpenWithOther
 import com.vuukle.webview.helper.AnimationHelper
-import com.vuukle.webview.helper.UrlHelper
 import com.vuukle.webview.manager.auth.AuthManager
 import com.vuukle.webview.manager.url.UrlManager
 import com.vuukle.webview.utils.*
@@ -351,16 +349,14 @@ import com.vuukle.webview.utils.*
 
         override fun onConsoleMessage(consoleMessage: ConsoleMessage): Boolean {
 
-            if(consoleMessage.message().contains("logout-clicked")){
+            if (consoleMessage.message().contains("logout-clicked")) {
                 logoutSSO()
-            }else if(consoleMessage.message().contains("sso-sign-in")){
+            } else if (consoleMessage.message().contains("sso-sign-in")) {
                 AlertDialog.Builder(this@MainActivity)
                     .setMessage("Sign in button clicked")
-                    .setPositiveButton("OK", object: DialogInterface.OnClickListener {
-                        override fun onClick(dialog: DialogInterface?, which: Int) {
-
-                        }
-                    })
+                    .setPositiveButton(
+                        "OK"
+                    ) { _, _ -> }
                     .create()
                     .show()
             }
