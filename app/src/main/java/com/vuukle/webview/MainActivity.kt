@@ -1,4 +1,4 @@
-    package com.vuukle.webview
+package com.vuukle.webview
 
 import android.Manifest
 import android.app.Activity
@@ -11,6 +11,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Message
+import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import android.view.inputmethod.InputMethodManager
@@ -23,8 +24,16 @@ import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.ActionBar
 import androidx.appcompat.app.AppCompatActivity
+import androidx.browser.customtabs.CustomTabsIntent
+import androidx.browser.customtabs.CustomTabsService
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.facebook.CallbackManager
+import com.facebook.FacebookCallback
+import com.facebook.FacebookException
+import com.facebook.FacebookSdk
+import com.facebook.login.LoginManager
+import com.facebook.login.LoginResult
 import com.karumi.dexter.PermissionToken
 import com.karumi.dexter.listener.PermissionDeniedResponse
 import com.karumi.dexter.listener.PermissionGrantedResponse
@@ -35,12 +44,16 @@ import com.vuukle.webview.helper.AnimationHelper
 import com.vuukle.webview.manager.auth.AuthManager
 import com.vuukle.webview.manager.url.UrlManager
 import com.vuukle.webview.utils.*
+import java.util.*
 
 
-    class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListener {
+class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListener {
 
-        // Auth Manager
+    private var mFacebookCallbackManager: CallbackManager? = null
+
+    // Auth Manager
     private val authManager = AuthManager(this)
+
     //URL manager for get urls loading into WebView
     private val urlManager = UrlManager(this)
 
@@ -57,6 +70,7 @@ import com.vuukle.webview.utils.*
     var mContainer: LinearLayout? = null
     var openSite: OpenSite? = null
     var dialog: Dialog? = null
+
     @JvmField
     var uploadMessage: ValueCallback<Array<Uri>>? = null
     private val openPhoto = OpenPhoto()
@@ -66,7 +80,13 @@ import com.vuukle.webview.utils.*
         handleOnCreate()
         setOnScrollListener()
         createActionBar()
-        initOnClicks();
+        initOnClicks()
+        initFacebook()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        println()
     }
 
     private fun setOnScrollListener() {
@@ -74,8 +94,9 @@ import com.vuukle.webview.utils.*
         var animationLocked = false
 
         mWebViewComments?.setOnTouchListener {
-            animationLocked = !(it?.actionMasked == MotionEvent.ACTION_UP || it?.actionMasked == MotionEvent.ACTION_CANCEL)
-            if(!animationLocked) checkStatusBarState(mWebViewComments?.scrollY?:0)
+            animationLocked =
+                !(it?.actionMasked == MotionEvent.ACTION_UP || it?.actionMasked == MotionEvent.ACTION_CANCEL)
+            if (!animationLocked) checkStatusBarState(mWebViewComments?.scrollY ?: 0)
         }
         var isScrollable = true
         mWebViewComments?.setOnTouchListener {
@@ -83,37 +104,38 @@ import com.vuukle.webview.utils.*
         }
         mWebViewComments?.setOnScrollChangeListener { l, t, oldl, oldt ->
 
-            val contentHeight = mWebViewComments?.contentHeight?:mWebViewComments?.measuredHeight?:0
+            val contentHeight =
+                mWebViewComments?.contentHeight ?: mWebViewComments?.measuredHeight ?: 0
             val delta = contentHeight + 100
 
-            if(!isScrollable){
+            if (!isScrollable) {
                 mWebViewComments?.scrollY = delta
             }
 
-            if(t >= delta && mWebViewPowerBar?.tag == "1"){
+            if (t >= delta && mWebViewPowerBar?.tag == "1") {
                 mWebViewComments?.scrollY = delta
                 isScrollable = false
-            }else{
-                if(!animationLocked) checkStatusBarState(t)
+            } else {
+                if (!animationLocked) checkStatusBarState(t)
             }
         }
     }
 
-    private fun checkStatusBarState(scrollY: Int){
+    private fun checkStatusBarState(scrollY: Int) {
 
-        if(scrollY > 0 && mWebViewPowerBar?.tag == "1"){
-            mWebViewPowerBar?.let{
+        if (scrollY > 0 && mWebViewPowerBar?.tag == "1") {
+            mWebViewPowerBar?.let {
                 AnimationHelper.moveToY(it, 300, -it.height.toFloat()) {
-                    AnimationHelper.changeMarginTop(mWebViewComments!!, 300, 0){
+                    AnimationHelper.changeMarginTop(mWebViewComments!!, 300, 0) {
                         mWebViewPowerBar?.tag = "0"
                     }
                 }
             }
 
-        }else if(scrollY <= 0 && mWebViewPowerBar?.tag == "0") {
-            mWebViewPowerBar?.let{
+        } else if (scrollY <= 0 && mWebViewPowerBar?.tag == "0") {
+            mWebViewPowerBar?.let {
                 AnimationHelper.moveToY(it, 300, 0F) {
-                    AnimationHelper.changeMarginTop(mWebViewComments!!, 300, it.height){
+                    AnimationHelper.changeMarginTop(mWebViewComments!!, 300, it.height) {
                         mWebViewPowerBar?.tag = "1"
                     }
                 }
@@ -159,7 +181,7 @@ import com.vuukle.webview.utils.*
     }
 
     // Logout user SSO
-    private fun logoutSSO(){
+    private fun logoutSSO() {
         // Logout user
         authManager.logout()
         // Clear all cookies
@@ -171,11 +193,17 @@ import com.vuukle.webview.utils.*
     }
 
     private fun requestPermission() {
-        ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.CAMERA),
-                PERMISSION_REQUEST_CODE)
+        ActivityCompat.requestPermissions(
+            this, arrayOf(Manifest.permission.CAMERA),
+            PERMISSION_REQUEST_CODE
+        )
     }
 
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
 
         when (requestCode) {
@@ -186,8 +214,10 @@ import com.vuukle.webview.utils.*
                 Toast.makeText(applicationContext, "Permission Denied", Toast.LENGTH_SHORT).show()
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                     if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
-                            != PackageManager.PERMISSION_GRANTED) {
-                        showMessageOKCancel("You need to allow access permissions"
+                        != PackageManager.PERMISSION_GRANTED
+                    ) {
+                        showMessageOKCancel(
+                            "You need to allow access permissions"
                         ) { dialog, which ->
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                                 requestPermission()
@@ -202,11 +232,11 @@ import com.vuukle.webview.utils.*
     private fun showMessageOKCancel(message: String, okListener: DialogInterface.OnClickListener) {
 
         AlertDialog.Builder(this)
-                .setMessage(message)
-                .setPositiveButton("OK", okListener)
-                .setNegativeButton("Cancel", null)
-                .create()
-                .show()
+            .setMessage(message)
+            .setPositiveButton("OK", okListener)
+            .setNegativeButton("Cancel", null)
+            .create()
+            .show()
     }
 
     private fun handleOnCreate() {
@@ -214,6 +244,7 @@ import com.vuukle.webview.utils.*
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
             WebView.setWebContentsDebuggingEnabled(true)
         }
+
         //initialising views
         setContentView(R.layout.activity_main)
         mWebViewComments = findViewById(R.id.activity_main_webview_comments)
@@ -255,17 +286,20 @@ import com.vuukle.webview.utils.*
         mWebViewPowerBar?.settings?.pluginState = WebSettings.PluginState.ON;
         mWebViewPowerBar?.webChromeClient = webChromeClient
         mWebViewPowerBar?.settings?.userAgentString = System.getProperty("http.agent")
-                ?: "Mozilla/5.0 (Linux; Android 11) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.91 Mobile Safari/537.36"
+            ?: "Mozilla/5.0 (Linux; Android 11) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.91 Mobile Safari/537.36"
         mWebViewPowerBar?.webViewClient = object : WebViewClient() {
 
 
             override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
                 //Clicked url
-                if (url.contains("whatsapp://send") || url.contains("https://web.whatsapp.com/send?text=") || url.contains("fb-messenger") && popup != null) {
+                if (url.contains("whatsapp://send") || url.contains("https://web.whatsapp.com/send?text=") || url.contains(
+                        "fb-messenger"
+                    ) && popup != null
+                ) {
                     openSite!!.openWhatsApp(url, mWebViewComments!!)
                 } else if (url.contains("tg:msg_url")) {
                     openSite!!.openApp(url)
-                }else if (openSite!!.isOpenSupportInBrowser(url)) {
+                } else if (openSite!!.isOpenSupportInBrowser(url)) {
                     openSite!!.openPrivacyPolicy(url)
                 } else if (url.contains("mailto:to") || url.contains("mailto:")) {
                     openSite!!.openApp(url)
@@ -282,7 +316,7 @@ import com.vuukle.webview.utils.*
         mWebViewComments?.settings?.domStorageEnabled = true
         mWebViewComments?.settings?.setSupportZoom(false)
         mWebViewComments?.settings?.userAgentString = System.getProperty("http.agent")
-                ?: "Mozilla/5.0 (Linux; Android 11) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.91 Mobile Safari/537.36"
+            ?: "Mozilla/5.0 (Linux; Android 11) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.91 Mobile Safari/537.36"
         mWebViewComments?.settings?.allowFileAccess = true
         mWebViewComments?.settings?.allowContentAccess = true
         mWebViewComments?.scrollBarStyle = View.SCROLLBARS_INSIDE_OVERLAY
@@ -301,15 +335,18 @@ import com.vuukle.webview.utils.*
             override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
 
                 //Clicked url
-               if (url.contains("whatsapp://send") || url.contains("https://web.whatsapp.com/send?text=") || url.contains("fb-messenger") && popup != null) {
+                if (url.contains("whatsapp://send") || url.contains("https://web.whatsapp.com/send?text=") || url.contains(
+                        "fb-messenger"
+                    ) && popup != null
+                ) {
                     openSite!!.openWhatsApp(url, mWebViewComments!!)
                 } else if (url.contains("tg:msg_url")) {
                     openSite!!.openApp(url)
-                }else if (openSite!!.isOpenSupportInBrowser(url)) {
+                } else if (openSite!!.isOpenSupportInBrowser(url)) {
                     openSite!!.openPrivacyPolicy(url)
                 } else if (url.contains("mailto:to") || url.contains("mailto:")) {
                     openSite!!.openApp(url)
-                }else {
+                } else {
                     if (!url.needOpenWithOther()) {
                         dialog!!.openDialogOther(url)
                     }
@@ -322,11 +359,14 @@ import com.vuukle.webview.utils.*
     override fun onActivityResult(requestCode: Int, resultCode: Int, intent: Intent?) {
 
         super.onActivityResult(requestCode, resultCode, intent)
+        mFacebookCallbackManager?.onActivityResult(requestCode, resultCode, intent)
 
-        if (CAMERA_PERMISSION == resultCode && requestCode == Activity.RESULT_OK) openPhoto.selectImage(this@MainActivity)
+        if (CAMERA_PERMISSION == resultCode && requestCode == Activity.RESULT_OK)
+            openPhoto.selectImage(this@MainActivity)
 
         if (requestCode == REQUEST_SELECT_FILE) {
-            val result = if (intent == null || resultCode != Activity.RESULT_OK) null else intent.data
+            val result =
+                if (intent == null || resultCode != Activity.RESULT_OK) null else intent.data
             result?.let {
                 dialog?.uploadMessage?.onReceiveValue(arrayOf(result))
                 dialog?.uploadMessage = null
@@ -339,9 +379,13 @@ import com.vuukle.webview.utils.*
 
     private val webChromeClient: WebChromeClient = object : WebChromeClient() {
 
-        override fun onShowFileChooser(webView: WebView?, filePathCallback: ValueCallback<Array<Uri>>?, fileChooserParams: FileChooserParams?): Boolean {
+        override fun onShowFileChooser(
+            webView: WebView?,
+            filePathCallback: ValueCallback<Array<Uri>>?,
+            fileChooserParams: FileChooserParams?
+        ): Boolean {
             uploadMessage = filePathCallback
-            openPhoto.selectImage(context = this@MainActivity){
+            openPhoto.selectImage(context = this@MainActivity) {
                 uploadMessage?.onReceiveValue(arrayOf())
                 uploadMessage = null
             }
@@ -369,7 +413,12 @@ import com.vuukle.webview.utils.*
             request?.grant(request.resources)
         }
 
-        override fun onCreateWindow(view: WebView, isDialog: Boolean, isUserGesture: Boolean, resultMsg: Message): Boolean {
+        override fun onCreateWindow(
+            view: WebView,
+            isDialog: Boolean,
+            isUserGesture: Boolean,
+            resultMsg: Message
+        ): Boolean {
 
             popup = WebView(this@MainActivity)
             popup!!.settings.javaScriptEnabled = true
@@ -391,21 +440,29 @@ import com.vuukle.webview.utils.*
 
                 override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
 
-                    val isOpenApp = if (url.contains("whatsapp://send") || url.contains("https://web.whatsapp.com/send?text=") || url.contains("fb-messenger") && popup != null) {
-                        openSite!!.openWhatsApp(url, mWebViewComments!!)
-                        true
-                    } else if (url.contains("tg:msg_url")) {
-                        openSite!!.openApp(url)
-                        true
-                    }else if (openSite!!.isOpenSupportInBrowser(url)) {
-                        openSite!!.openPrivacyPolicy(url)
-                        true
-                    } else if (url.contains("mailto:to") || url.contains("mailto:")) {
-                        openSite!!.openApp(url)
-                        true
-                    }else false
+                    LoginManager.getInstance().logInWithReadPermissions(this@MainActivity, Arrays.asList("public_profile"));
 
-                    if(isOpenApp) return false
+                    return true
+
+                    val isOpenApp =
+                        if (url.contains("whatsapp://send") || url.contains("https://web.whatsapp.com/send?text=") || url.contains(
+                                "fb-messenger"
+                            ) && popup != null
+                        ) {
+                            openSite!!.openWhatsApp(url, mWebViewComments!!)
+                            true
+                        } else if (url.contains("tg:msg_url")) {
+                            openSite!!.openApp(url)
+                            true
+                        } else if (openSite!!.isOpenSupportInBrowser(url)) {
+                            openSite!!.openPrivacyPolicy(url)
+                            true
+                        } else if (url.contains("mailto:to") || url.contains("mailto:")) {
+                            openSite!!.openApp(url)
+                            true
+                        } else false
+
+                    if (isOpenApp) return false
 
                     if (popup != null) {
                         if (url.contains(AUTH) || url.contains(CONSENT)) {
@@ -448,9 +505,13 @@ import com.vuukle.webview.utils.*
                     return super.onCreateWindow(view, isDialog, isUserGesture, resultMsg)
                 }
 
-                override fun onShowFileChooser(webView: WebView?, filePathCallback: ValueCallback<Array<Uri>>?, fileChooserParams: FileChooserParams?): Boolean {
+                override fun onShowFileChooser(
+                    webView: WebView?,
+                    filePathCallback: ValueCallback<Array<Uri>>?,
+                    fileChooserParams: FileChooserParams?
+                ): Boolean {
                     uploadMessage = filePathCallback
-                    openPhoto.selectImage(context = this@MainActivity){
+                    openPhoto.selectImage(context = this@MainActivity) {
                         uploadMessage?.onReceiveValue(arrayOf())
                         uploadMessage = null
                     }
@@ -505,11 +566,56 @@ import com.vuukle.webview.utils.*
         handleOnCreate()
     }
 
-    override fun onPermissionRationaleShouldBeShown(permission: PermissionRequest?, token: PermissionToken?) {
+    override fun onPermissionRationaleShouldBeShown(
+        permission: PermissionRequest?,
+        token: PermissionToken?
+    ) {
 
     }
 
     override fun onPermissionDenied(response: PermissionDeniedResponse?) {
         Toast.makeText(this, "Please accept camera permission", Toast.LENGTH_LONG).show()
+    }
+
+    private fun initFacebook() {
+
+        this.mFacebookCallbackManager = CallbackManager.Factory.create()
+
+        LoginManager.getInstance().registerCallback(mFacebookCallbackManager,
+            object : FacebookCallback<LoginResult?> {
+                override fun onSuccess(loginResult: LoginResult?) {
+
+                    loginResult?.accessToken?.let {
+                        Log.i("testing", it.token)
+                        var cookie = CookieManager.getInstance().getCookie(mWebViewComments?.url)
+                        cookie = cookie.plus("; token=${it.token}")
+                        val manager = CookieManager.getInstance();
+                        manager.setAcceptCookie(true)
+
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                            manager.removeSessionCookies({
+                                println()
+                            });
+                            manager.setCookie(mWebViewComments?.url, cookie)
+                           // CookieManager.getInstance().flush()
+                        }else{
+                            manager.removeSessionCookie();
+                            manager.setCookie(mWebViewComments?.url, cookie)
+//                            CookieSyncManager.getInstance().sync()
+                        }
+                        mWebViewComments?.reload()
+                    } ?: run {
+                        Log.i("testing", "no token")
+                    }
+                }
+
+                override fun onCancel() {
+                    Log.i("testing", "cancel")
+                }
+
+                override fun onError(exception: FacebookException) {
+                    Log.i("testing", exception.message.toString())
+                }
+            })
     }
 }

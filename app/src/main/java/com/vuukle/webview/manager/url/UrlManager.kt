@@ -10,7 +10,7 @@ class UrlManager(activity: AppCompatActivity) {
 
     fun getCommentsUrl(): String {
 
-        var url = "https://cdntest.vuukle.com/amp.html?url=https://romantic-villani-2fc571.netlify.app&host=romantic-villani-2fc571.netlify.app&id=123ggg45gerrge09876&apiKey=664e0b85-5b2c-4881-ba64-3aa9f992d01c&title=Aryaasdas123ff&title=test&img=https://pixabay.com/en/image-statue-brass-child-art-1465348&sso=true&sdk=true"
+        var url = "https://cdntest.vuukle.com/amp.html?url=https://romantic-villani-2fc571.netlify.app&host=romantic-villani-2fc571.netlify.app&id=123ggg45gerrge09876&apiKey=664e0b85-5b2c-4881-ba64-3aa9f992d01c&title=Aryaasdas123ff&title=test&img=https://pixabay.com/en/image-statue-brass-child-art-1465348"
 
         if(authManager.isLoggedIn()){
             url = url.plus("&sso=true&loginToken=${authManager.getToken()}")

@@ -13,7 +13,7 @@ android {
         buildConfigField("String", "PUBLISHER_PUBLIC_KEY", apikeyProperties['PUBLISHER_PUBLIC_KEY'])
         buildConfigField("String", "PUBLISHER_PRIVATE_KEY", apikeyProperties['PUBLISHER_PRIVATE_KEY'])
 
-        applicationId "com.example.pc_5.vuukleweb"
+        applicationId "com.vuukle.webview"
         minSdkVersion 19
         targetSdkVersion 30
         versionCode 1
@@ -48,6 +48,7 @@ dependencies {
     implementation 'com.karumi:dexter:6.2.2'
     // Gson
     implementation 'com.google.code.gson:gson:2.8.6'
+    implementation 'com.facebook.android:facebook-login:12.0.0'
 }
 repositories {
     mavenCentral()
