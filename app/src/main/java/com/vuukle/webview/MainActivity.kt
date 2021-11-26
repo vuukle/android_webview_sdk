@@ -24,14 +24,11 @@ import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.ActionBar
 import androidx.appcompat.app.AppCompatActivity
-import androidx.browser.customtabs.CustomTabsIntent
-import androidx.browser.customtabs.CustomTabsService
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.facebook.CallbackManager
 import com.facebook.FacebookCallback
 import com.facebook.FacebookException
-import com.facebook.FacebookSdk
 import com.facebook.login.LoginManager
 import com.facebook.login.LoginResult
 import com.karumi.dexter.PermissionToken
@@ -44,7 +41,18 @@ import com.vuukle.webview.helper.AnimationHelper
 import com.vuukle.webview.manager.auth.AuthManager
 import com.vuukle.webview.manager.url.UrlManager
 import com.vuukle.webview.utils.*
+import okhttp3.Cookie
 import java.util.*
+import android.webkit.WebViewClient
+
+import android.preference.PreferenceManager
+
+import android.content.SharedPreferences
+
+import android.webkit.CookieSyncManager
+
+
+
 
 
 class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListener {
@@ -82,11 +90,6 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
         createActionBar()
         initOnClicks()
         initFacebook()
-    }
-
-    override fun onResume() {
-        super.onResume()
-        println()
     }
 
     private fun setOnScrollListener() {
@@ -240,11 +243,11 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
     }
 
     private fun handleOnCreate() {
+
         // debug test webView
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
             WebView.setWebContentsDebuggingEnabled(true)
         }
-
         //initialising views
         setContentView(R.layout.activity_main)
         mWebViewComments = findViewById(R.id.activity_main_webview_comments)
@@ -440,27 +443,33 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
 
                 override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
 
-                    LoginManager.getInstance().logInWithReadPermissions(this@MainActivity, Arrays.asList("public_profile"));
-
-                    return true
-
                     val isOpenApp =
-                        if (url.contains("whatsapp://send") || url.contains("https://web.whatsapp.com/send?text=") || url.contains(
+                        when {
+                            (url.contains("whatsapp://send") || url.contains("https://web.whatsapp.com/send?text=") || url.contains(
                                 "fb-messenger"
                             ) && popup != null
-                        ) {
-                            openSite!!.openWhatsApp(url, mWebViewComments!!)
-                            true
-                        } else if (url.contains("tg:msg_url")) {
-                            openSite!!.openApp(url)
-                            true
-                        } else if (openSite!!.isOpenSupportInBrowser(url)) {
-                            openSite!!.openPrivacyPolicy(url)
-                            true
-                        } else if (url.contains("mailto:to") || url.contains("mailto:")) {
-                            openSite!!.openApp(url)
-                            true
-                        } else false
+                                    ) -> {
+                                openSite!!.openWhatsApp(url, mWebViewComments!!)
+                                true
+                            }
+                            url.contains("tg:msg_url") -> {
+                                openSite!!.openApp(url)
+                                true
+                            }
+                           openSite!!.isOpenSupportInBrowser(url) -> {
+                                openSite!!.openPrivacyPolicy(url)
+                                true
+                            }
+                            url.contains("mailto:to") || url.contains("mailto:") -> {
+                                openSite!!.openApp(url)
+                                true
+                            }
+                            url.contains("/auth/facebook") -> {
+                                LoginManager.getInstance().logInWithReadPermissions(this@MainActivity, Arrays.asList("public_profile"));
+                                true
+                            }
+                            else  -> false
+                        }
 
                     if (isOpenApp) return false
 
@@ -546,7 +555,6 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
     override fun reloadView() {
         //mWebViewComments!!.reload()
     }
-
     companion object {
         const val TAG = "MainActivity"
 
@@ -586,37 +594,19 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
                 override fun onSuccess(loginResult: LoginResult?) {
 
                     loginResult?.accessToken?.let {
-                        Log.i("testing", it.token)
-
-
-                        // Getting vuukle access token from fb access token
                         authManager.loginViaFacebook(it.token){
-
-                            println()
+                            it?.let {
+                                val cookieManager = CookieManager.getInstance()
+                                cookieManager.setAcceptCookie(true)
+                                val tokenCookie = "token=$it";
+                                cookieManager.setCookie(mWebViewComments?.url, tokenCookie)
+                                mWebViewComments?.loadUrl(mWebViewComments!!.url?:urlManager.getCommentsUrl())
+                            }?:run{
+                                Toast.makeText(this@MainActivity, "Can not login", Toast.LENGTH_LONG)
+                            }
                         }
-
-
-
-
-//                        var cookie = CookieManager.getInstance().getCookie(mWebViewComments?.url)
-//                        cookie = cookie.plus("; token=${it.token}")
-//                        val manager = CookieManager.getInstance();
-//                        manager.setAcceptCookie(true)
-//
-//                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-//                            manager.removeSessionCookies({
-//                                println()
-//                            });
-//                            manager.setCookie(mWebViewComments?.url, cookie)
-//                           // CookieManager.getInstance().flush()
-//                        }else{
-//                            manager.removeSessionCookie();
-//                            manager.setCookie(mWebViewComments?.url, cookie)
-////                            CookieSyncManager.getInstance().sync()
-//                        }
-//                        mWebViewComments?.reload()
                     } ?: run {
-                        Log.i("testing", "no token")
+                        Toast.makeText(this@MainActivity, "Can not login", Toast.LENGTH_LONG)
                     }
                 }
 
