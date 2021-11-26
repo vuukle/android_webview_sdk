@@ -3,6 +3,7 @@ package com.vuukle.webview.manager.auth
 import android.util.Base64.DEFAULT
 import androidx.appcompat.app.AppCompatActivity
 import com.google.gson.Gson
+import com.google.gson.internal.LinkedTreeMap
 import com.vuukle.webview.BuildConfig
 import com.vuukle.webview.manager.auth.model.AuthenticationModel
 import com.vuukle.webview.manager.network.ApiService
@@ -32,10 +33,13 @@ class AuthManager(activity: AppCompatActivity) {
     private val publicKey = BuildConfig.PUBLISHER_PUBLIC_KEY
     private val storageManager = StorageImpl(activity)
 
-    fun loginViaFacebook(fbToken: String) = runBlocking {
-
+    fun loginViaFacebook(fbToken: String, onResult: (String?) -> Unit) = runBlocking {
         val response = nonAuthorizedApiClient().loginViaFacebook(fbToken)
-        println()
+        (response.body() as? LinkedTreeMap<*, *>)?.get("vuukleToken")?.let {
+            onResult.invoke(it as String)
+        } ?: run {
+            onResult.invoke(null)
+        }
     }
 
     /**

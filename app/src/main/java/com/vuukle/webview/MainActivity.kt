@@ -590,7 +590,10 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
 
 
                         // Getting vuukle access token from fb access token
-                        authManager.loginViaFacebook(it.token)
+                        authManager.loginViaFacebook(it.token){
+
+                            println()
+                        }
 
 
 
