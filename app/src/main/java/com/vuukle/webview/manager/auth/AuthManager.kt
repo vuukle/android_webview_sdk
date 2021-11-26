@@ -5,14 +5,24 @@ import androidx.appcompat.app.AppCompatActivity
 import com.google.gson.Gson
 import com.vuukle.webview.BuildConfig
 import com.vuukle.webview.manager.auth.model.AuthenticationModel
+import com.vuukle.webview.manager.network.ApiService
+import com.vuukle.webview.manager.network.BaseApiClient
+import kotlinx.coroutines.runBlocking
 import litparty.app.manager.storage.StorageImpl
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
 import java.util.*
-import kotlin.experimental.and
 
 class AuthManager(activity: AppCompatActivity) {
+
+    /**
+     *  Returning non authorization header Client
+     */
+    private fun nonAuthorizedApiClient(): ApiService {
+        return BaseApiClient(ApiService::class.java)
+            .nonAuthorizedApiClient("https://cdn.vuukle.com/")
+    }
 
     companion object {
         private const val tokenKey = "token"
@@ -22,13 +32,19 @@ class AuthManager(activity: AppCompatActivity) {
     private val publicKey = BuildConfig.PUBLISHER_PUBLIC_KEY
     private val storageManager = StorageImpl(activity)
 
+    fun loginViaFacebook(fbToken: String) = runBlocking {
+
+        val response = nonAuthorizedApiClient().loginViaFacebook(fbToken)
+        println()
+    }
+
     /**
      * Login by user email and Name
      */
     @Synchronized
     fun login(email: String?, userName: String?): Boolean {
 
-        if(email.isNullOrEmpty() || userName.isNullOrEmpty()) return false
+        if (email.isNullOrEmpty() || userName.isNullOrEmpty()) return false
 
         val authModel = generateAuthenticationModel(email, userName)
         val authJsonString = Gson().toJson(authModel)

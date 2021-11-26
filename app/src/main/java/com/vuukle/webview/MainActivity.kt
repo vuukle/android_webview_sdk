@@ -587,23 +587,31 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
 
                     loginResult?.accessToken?.let {
                         Log.i("testing", it.token)
-                        var cookie = CookieManager.getInstance().getCookie(mWebViewComments?.url)
-                        cookie = cookie.plus("; token=${it.token}")
-                        val manager = CookieManager.getInstance();
-                        manager.setAcceptCookie(true)
 
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                            manager.removeSessionCookies({
-                                println()
-                            });
-                            manager.setCookie(mWebViewComments?.url, cookie)
-                           // CookieManager.getInstance().flush()
-                        }else{
-                            manager.removeSessionCookie();
-                            manager.setCookie(mWebViewComments?.url, cookie)
-//                            CookieSyncManager.getInstance().sync()
-                        }
-                        mWebViewComments?.reload()
+
+                        // Getting vuukle access token from fb access token
+                        authManager.loginViaFacebook(it.token)
+
+
+
+
+//                        var cookie = CookieManager.getInstance().getCookie(mWebViewComments?.url)
+//                        cookie = cookie.plus("; token=${it.token}")
+//                        val manager = CookieManager.getInstance();
+//                        manager.setAcceptCookie(true)
+//
+//                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+//                            manager.removeSessionCookies({
+//                                println()
+//                            });
+//                            manager.setCookie(mWebViewComments?.url, cookie)
+//                           // CookieManager.getInstance().flush()
+//                        }else{
+//                            manager.removeSessionCookie();
+//                            manager.setCookie(mWebViewComments?.url, cookie)
+////                            CookieSyncManager.getInstance().sync()
+//                        }
+//                        mWebViewComments?.reload()
                     } ?: run {
                         Log.i("testing", "no token")
                     }
