@@ -1,7 +1,8 @@
-package litparty.app.manager.storage
+package com.vuukle.webview.manager.storage
 
 import android.content.Context
 import androidx.appcompat.app.AppCompatActivity
+import litparty.app.manager.storage.StorageManager
 
 
 class StorageImpl(activity: AppCompatActivity) : StorageManager {
