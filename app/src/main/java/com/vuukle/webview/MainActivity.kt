@@ -610,20 +610,20 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
                                 cookieManager.setCookie(mWebViewComments?.url, tokenCookie)
                                 mWebViewComments?.loadUrl(mWebViewComments!!.url?:urlManager.getCommentsUrl())
                             }?:run{
-                                Toast.makeText(this@MainActivity, "Can not login", Toast.LENGTH_LONG)
+                                Toast.makeText(this@MainActivity, "Can not login", Toast.LENGTH_LONG).show()
                             }
                         }
                     } ?: run {
-                        Toast.makeText(this@MainActivity, "Can not login", Toast.LENGTH_LONG)
+                        Toast.makeText(this@MainActivity, "Can not login", Toast.LENGTH_LONG).show()
                     }
                 }
 
                 override fun onCancel() {
-                    Log.i("testing", "cancel")
+                    Toast.makeText(this@MainActivity, "Can not login", Toast.LENGTH_LONG).show()
                 }
 
                 override fun onError(exception: FacebookException) {
-                    Log.i("testing", exception.message.toString())
+                    Toast.makeText(this@MainActivity, exception.message, Toast.LENGTH_LONG).show()
                 }
             })
     }

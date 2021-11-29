@@ -135,18 +135,132 @@ Example:
             }
         });
 ```
-### 6)The "Dialog" file shows a modal window
-### 7)The file "OpenPhoto" has the logic of opening a photo
-### 8)The "OpenSite" says it's open in or out of the application
-### 9)The "ListenerModalWindow" Using this interface, the modal window communicates with the main window.
-### 10) Full sample:
+### 6) The "Dialog" file shows a modal window
+### 7) The file "OpenPhoto" has the logic of opening a photo
+### 8) The "OpenSite" says it's open in or out of the application
+### 9) The "ListenerModalWindow" Using this interface, the modal window communicates with the main window.
+### 10) Integration Facebook login
+----------
+
+Implement Facebook login with facebook-login-sdk
+https://developers.facebook.com/docs/facebook-login/android/
+When you successfully get access token from facebook, you need to
+use AuthManager.loginViaFacebook methode for login to vuukle platform. 
+If this operation is successfully completed, need to add user token in browser cookie. 
+
+```kotlin
+  LoginManager.getInstance().registerCallback(mFacebookCallbackManager,
+    object : FacebookCallback<LoginResult?> {
+        override fun onSuccess(loginResult: LoginResult?) {
+
+            loginResult?.accessToken?.let {
+                authManager.loginViaFacebook(it.token) {
+                    it?.let {
+                        val cookieManager = CookieManager.getInstance()
+                        cookieManager.setAcceptCookie(true)
+                        val tokenCookie = "token=$it";
+                        cookieManager.setCookie(mWebViewComments?.url, tokenCookie)
+                        mWebViewComments?.loadUrl(
+                            mWebViewComments!!.url ?: urlManager.getCommentsUrl()
+                        )
+                    } ?: run {
+                        Toast.makeText(this@MainActivity, "Can not login", Toast.LENGTH_LONG).show()
+                    }
+                }
+            } ?: run {
+                Toast.makeText(this@MainActivity, "Can not login", Toast.LENGTH_LONG).show()
+            }
+        }
+    })
+```
+### 11) Customize SSO Button Click
+__________
+
+We can add condition from onConsoleMessage function.
+
+```kotlin
+override fun onConsoleMessage(consoleMessage: ConsoleMessage): Boolean {
+
+   if (consoleMessage.message().contains("logout-clicked")) {
+       logoutSSO()
+   } else if (consoleMessage.message().contains("sso-sign-in")) {
+       AlertDialog.Builder(this@MainActivity)
+           .setMessage("Sign in button clicked")
+           .setPositiveButton(
+               "OK"
+           ) { _, _ -> }
+           .create()
+           .show()
+   }
+   return super.onConsoleMessage(consoleMessage)
+}
+```
+### 12) Full sample:
 ----------
 ```kotlin
 
+package com.vuukle.webview
+
+import android.Manifest
+import android.app.Activity
+import android.app.AlertDialog
+import android.content.Context
+import android.content.DialogInterface
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
+import android.os.Build
+import android.os.Bundle
+import android.os.Message
+import android.util.Log
+import android.view.MotionEvent
+import android.view.View
+import android.view.inputmethod.InputMethodManager
+import android.webkit.*
+import android.webkit.WebView.WebViewTransport
+import android.widget.Button
+import android.widget.LinearLayout
+import android.widget.ScrollView
+import android.widget.Toast
+import androidx.annotation.RequiresApi
+import androidx.appcompat.app.ActionBar
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import com.facebook.CallbackManager
+import com.facebook.FacebookCallback
+import com.facebook.FacebookException
+import com.facebook.login.LoginManager
+import com.facebook.login.LoginResult
+import com.karumi.dexter.PermissionToken
+import com.karumi.dexter.listener.PermissionDeniedResponse
+import com.karumi.dexter.listener.PermissionGrantedResponse
+import com.karumi.dexter.listener.PermissionRequest
+import com.karumi.dexter.listener.single.PermissionListener
+import com.vuukle.webview.ext.needOpenWithOther
+import com.vuukle.webview.helper.AnimationHelper
+import com.vuukle.webview.manager.auth.AuthManager
+import com.vuukle.webview.manager.url.UrlManager
+import com.vuukle.webview.utils.*
+import okhttp3.Cookie
+import java.util.*
+import android.webkit.WebViewClient
+
+import android.preference.PreferenceManager
+
+import android.content.SharedPreferences
+
+import android.webkit.CookieSyncManager
+import java.net.URLDecoder
+
+
 class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListener {
+
+    private var mFacebookCallbackManager: CallbackManager? = null
 
     // Auth Manager
     private val authManager = AuthManager(this)
+
     //URL manager for get urls loading into WebView
     private val urlManager = UrlManager(this)
 
@@ -157,11 +271,13 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
     //WebView
     var mWebViewComments: VuukleWebView? = null
     var mWebViewPowerBar: VuukleWebView? = null
+    var mContentContainer: ScrollView? = null
     private lateinit var loginSSOButton: Button
     private lateinit var logoutSSOButton: Button
     var mContainer: LinearLayout? = null
     var openSite: OpenSite? = null
     var dialog: Dialog? = null
+
     @JvmField
     var uploadMessage: ValueCallback<Array<Uri>>? = null
     private val openPhoto = OpenPhoto()
@@ -171,7 +287,8 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
         handleOnCreate()
         setOnScrollListener()
         createActionBar()
-        initOnClicks();
+        initOnClicks()
+        initFacebook()
     }
 
     private fun setOnScrollListener() {
@@ -179,31 +296,52 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
         var animationLocked = false
 
         mWebViewComments?.setOnTouchListener {
-            animationLocked = !(it?.actionMasked == MotionEvent.ACTION_UP || it?.actionMasked == MotionEvent.ACTION_CANCEL)
-            if(!animationLocked) checkStatusBarState(mWebViewComments?.scrollY?:0)
+            animationLocked =
+                !(it?.actionMasked == MotionEvent.ACTION_UP || it?.actionMasked == MotionEvent.ACTION_CANCEL)
+            if (!animationLocked) checkStatusBarState(mWebViewComments?.scrollY ?: 0)
         }
-
+        var isScrollable = true
+        mWebViewComments?.setOnTouchListener {
+            isScrollable = true
+        }
         mWebViewComments?.setOnScrollChangeListener { l, t, oldl, oldt ->
-            if(!animationLocked) checkStatusBarState(t)
+
+            val contentHeight =
+                mWebViewComments?.contentHeight ?: mWebViewComments?.measuredHeight ?: 0
+            val delta = contentHeight + 100
+
+            if (!isScrollable) {
+                mWebViewComments?.scrollY = delta
+            }
+
+            if (t >= delta && mWebViewPowerBar?.tag == "1") {
+                mWebViewComments?.scrollY = delta
+                isScrollable = false
+            } else {
+                if (!animationLocked) checkStatusBarState(t)
+            }
         }
     }
 
-    private fun checkStatusBarState(scrollY: Int){
+    private fun checkStatusBarState(scrollY: Int) {
 
-        if(scrollY > 0 && mWebViewPowerBar?.tag == "1"){
-            mWebViewPowerBar?.let{
+        if (scrollY > 0 && mWebViewPowerBar?.tag == "1") {
+            mWebViewPowerBar?.let {
                 AnimationHelper.moveToY(it, 300, -it.height.toFloat()) {
-                    AnimationHelper.changeMarginTop(mWebViewComments!!, 300, 0)
+                    AnimationHelper.changeMarginTop(mWebViewComments!!, 300, 0) {
+                        mWebViewPowerBar?.tag = "0"
+                    }
                 }
             }
-            mWebViewPowerBar?.tag = "0"
-        }else if(scrollY <= 0 && mWebViewPowerBar?.tag == "0") {
-            mWebViewPowerBar?.let{
+
+        } else if (scrollY <= 0 && mWebViewPowerBar?.tag == "0") {
+            mWebViewPowerBar?.let {
                 AnimationHelper.moveToY(it, 300, 0F) {
-                    AnimationHelper.changeMarginTop(mWebViewComments!!, 300, it.height)
+                    AnimationHelper.changeMarginTop(mWebViewComments!!, 300, it.height) {
+                        mWebViewPowerBar?.tag = "1"
+                    }
                 }
             }
-            mWebViewPowerBar?.tag = "1"
         }
     }
 
@@ -220,7 +358,7 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
     private fun initOnClicks() {
 
         dialog?.addCloseListener() {
-            mWebViewComments?.reload()
+            //mWebViewComments?.reload()
         }
 
         getSharedPreferences("asd", Context.MODE_PRIVATE)
@@ -234,18 +372,18 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
         }
     }
 
-     // Login user by SSO using email and username
+    // Login user by SSO using email and username
     private fun loginBySSO(email: String, userName: String) {
-            // Login user
-            authManager.login(email, userName)
-            // Clear browser history
-            mWebViewComments?.clearHistory()
-            // Reload WebView using urlManager
-            mWebViewComments?.loadUrl(urlManager.getCommentsUrl())
+        // Login user
+        authManager.login(email, userName)
+        // Clear browser history
+        mWebViewComments?.clearHistory()
+        // Reload WebView using urlManager
+        mWebViewComments?.loadUrl(urlManager.getCommentsUrl())
     }
 
     // Logout user SSO
-    private fun logoutSSO(){
+    private fun logoutSSO() {
         // Logout user
         authManager.logout()
         // Clear all cookies
@@ -257,11 +395,19 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
     }
 
     private fun requestPermission() {
-        ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.CAMERA),
-                PERMISSION_REQUEST_CODE)
+        ActivityCompat.requestPermissions(
+            this, arrayOf(Manifest.permission.CAMERA),
+            PERMISSION_REQUEST_CODE
+        )
     }
 
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+
         when (requestCode) {
             PERMISSION_REQUEST_CODE -> if (grantResults.size > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 Toast.makeText(applicationContext, "Permission Granted", Toast.LENGTH_SHORT).show()
@@ -270,8 +416,10 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
                 Toast.makeText(applicationContext, "Permission Denied", Toast.LENGTH_SHORT).show()
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                     if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
-                            != PackageManager.PERMISSION_GRANTED) {
-                        showMessageOKCancel("You need to allow access permissions"
+                        != PackageManager.PERMISSION_GRANTED
+                    ) {
+                        showMessageOKCancel(
+                            "You need to allow access permissions"
                         ) { dialog, which ->
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                                 requestPermission()
@@ -286,14 +434,15 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
     private fun showMessageOKCancel(message: String, okListener: DialogInterface.OnClickListener) {
 
         AlertDialog.Builder(this)
-                .setMessage(message)
-                .setPositiveButton("OK", okListener)
-                .setNegativeButton("Cancel", null)
-                .create()
-                .show()
+            .setMessage(message)
+            .setPositiveButton("OK", okListener)
+            .setNegativeButton("Cancel", null)
+            .create()
+            .show()
     }
 
     private fun handleOnCreate() {
+
         // debug test webView
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
             WebView.setWebContentsDebuggingEnabled(true)
@@ -339,60 +488,79 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
         mWebViewPowerBar?.settings?.pluginState = WebSettings.PluginState.ON;
         mWebViewPowerBar?.webChromeClient = webChromeClient
         mWebViewPowerBar?.settings?.userAgentString = System.getProperty("http.agent")
-                ?: "Mozilla/5.0 (Linux; Android 11) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.91 Mobile Safari/537.36"
+            ?: "Mozilla/5.0 (Linux; Android 11) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.91 Mobile Safari/537.36"
         mWebViewPowerBar?.webViewClient = object : WebViewClient() {
 
             override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
                 //Clicked url
-                if (url.contains("whatsapp://send") || url.contains("https://web.whatsapp.com/send?text=") || url.contains("fb-messenger") && popup != null) {
+                if (url.contains("whatsapp://send") || url.contains("https://web.whatsapp.com/send?text=") || url.contains(
+                        "fb-messenger"
+                    ) && popup != null
+                ) {
                     openSite!!.openWhatsApp(url, mWebViewComments!!)
                 } else if (url.contains("tg:msg_url")) {
                     openSite!!.openApp(url)
-                }else if (openSite!!.isOpenSupportInBrowser(url)) {
+                } else if (openSite!!.isOpenSupportInBrowser(url)) {
                     openSite!!.openPrivacyPolicy(url)
                 } else if (url.contains("mailto:to") || url.contains("mailto:")) {
                     openSite!!.openApp(url)
                 } else {
-                    if (!url.needOpenWithOther()) {
+                    val urlDecoded = URLDecoder.decode(url, "UTF-8")
+                    val originUrlDecoded = URLDecoder.decode(urlManager.getPowerBarUrl(), "UTF-8")
+
+                    if (!url.needOpenWithOther() && !urlDecoded.equals(originUrlDecoded)) {
                         dialog!!.openDialogOther(url)
+                    }else{
+                        return false
                     }
                 }
                 return true
             }
         }
 
-
         mWebViewComments?.settings?.javaScriptEnabled = true
         mWebViewComments?.settings?.domStorageEnabled = true
         mWebViewComments?.settings?.setSupportZoom(false)
         mWebViewComments?.settings?.userAgentString = System.getProperty("http.agent")
-                ?: "Mozilla/5.0 (Linux; Android 11) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.91 Mobile Safari/537.36"
+            ?: "Mozilla/5.0 (Linux; Android 11) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.91 Mobile Safari/537.36"
         mWebViewComments?.settings?.allowFileAccess = true
         mWebViewComments?.settings?.allowContentAccess = true
         mWebViewComments?.scrollBarStyle = View.SCROLLBARS_INSIDE_OVERLAY
         mWebViewComments!!.webChromeClient = webChromeClient
         mWebViewComments?.settings?.pluginState = WebSettings.PluginState.ON;
         mWebViewComments?.settings?.mediaPlaybackRequiresUserGesture = false;
+        mWebViewComments?.settings?.setSupportMultipleWindows(true)
+
         mWebViewComments!!.webViewClient = object : WebViewClient() {
 
             override fun onPageFinished(view: WebView?, url: String?) {
+                super.onPageFinished(view, url)
                 mWebViewPowerBar?.reload()
             }
 
             override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
 
                 //Clicked url
-               if (url.contains("whatsapp://send") || url.contains("https://web.whatsapp.com/send?text=") || url.contains("fb-messenger") && popup != null) {
+                if (url.contains("whatsapp://send") ||
+                    url.contains("https://web.whatsapp.com/send?text=") ||
+                    url.contains("fb-messenger") && popup != null
+                ) {
                     openSite!!.openWhatsApp(url, mWebViewComments!!)
                 } else if (url.contains("tg:msg_url")) {
                     openSite!!.openApp(url)
-                }else if (openSite!!.isOpenSupportInBrowser(url)) {
+                } else if (openSite!!.isOpenSupportInBrowser(url)) {
                     openSite!!.openPrivacyPolicy(url)
                 } else if (url.contains("mailto:to") || url.contains("mailto:")) {
                     openSite!!.openApp(url)
-                }else {
-                    if (!url.needOpenWithOther()) {
+                } else {
+
+                    val urlDecoded = URLDecoder.decode(url, "UTF-8")
+                    val originUrlDecoded = URLDecoder.decode(urlManager.getCommentsUrl(), "UTF-8")
+
+                    if (!url.needOpenWithOther() && !urlDecoded.equals(originUrlDecoded)) {
                         dialog!!.openDialogOther(url)
+                    }else{
+                        return false
                     }
                 }
                 return true
@@ -403,11 +571,14 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
     override fun onActivityResult(requestCode: Int, resultCode: Int, intent: Intent?) {
 
         super.onActivityResult(requestCode, resultCode, intent)
+        mFacebookCallbackManager?.onActivityResult(requestCode, resultCode, intent)
 
-        if (CAMERA_PERMISSION == resultCode && requestCode == Activity.RESULT_OK) openPhoto.selectImage(this@MainActivity)
+        if (CAMERA_PERMISSION == resultCode && requestCode == Activity.RESULT_OK)
+            openPhoto.selectImage(this@MainActivity)
 
         if (requestCode == REQUEST_SELECT_FILE) {
-            val result = if (intent == null || resultCode != Activity.RESULT_OK) null else intent.data
+            val result =
+                if (intent == null || resultCode != Activity.RESULT_OK) null else intent.data
             result?.let {
                 dialog?.uploadMessage?.onReceiveValue(arrayOf(result))
                 dialog?.uploadMessage = null
@@ -420,9 +591,13 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
 
     private val webChromeClient: WebChromeClient = object : WebChromeClient() {
 
-        override fun onShowFileChooser(webView: WebView?, filePathCallback: ValueCallback<Array<Uri>>?, fileChooserParams: FileChooserParams?): Boolean {
+        override fun onShowFileChooser(
+            webView: WebView?,
+            filePathCallback: ValueCallback<Array<Uri>>?,
+            fileChooserParams: FileChooserParams?
+        ): Boolean {
             uploadMessage = filePathCallback
-            openPhoto.selectImage(context = this@MainActivity){
+            openPhoto.selectImage(context = this@MainActivity) {
                 uploadMessage?.onReceiveValue(arrayOf())
                 uploadMessage = null
             }
@@ -430,13 +605,32 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
         }
 
         override fun onConsoleMessage(consoleMessage: ConsoleMessage): Boolean {
-            if(consoleMessage.message().contains("logout-clicked")){
+
+            if (consoleMessage.message().contains("logout-clicked")) {
                 logoutSSO()
+            } else if (consoleMessage.message().contains("sso-sign-in")) {
+                AlertDialog.Builder(this@MainActivity)
+                    .setMessage("Sign in button clicked")
+                    .setPositiveButton(
+                        "OK"
+                    ) { _, _ -> }
+                    .create()
+                    .show()
             }
             return super.onConsoleMessage(consoleMessage)
         }
 
-        override fun onCreateWindow(view: WebView, isDialog: Boolean, isUserGesture: Boolean, resultMsg: Message): Boolean {
+        @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
+        override fun onPermissionRequest(request: android.webkit.PermissionRequest?) {
+            request?.grant(request.resources)
+        }
+
+        override fun onCreateWindow(
+            view: WebView,
+            isDialog: Boolean,
+            isUserGesture: Boolean,
+            resultMsg: Message
+        ): Boolean {
 
             popup = WebView(this@MainActivity)
             popup!!.settings.javaScriptEnabled = true
@@ -450,23 +644,43 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
             popup!!.settings.userAgentString = popup!!.settings.userAgentString.replace("; wv", "")
             val urlLast = arrayOf("")
             popup!!.webViewClient = object : WebViewClient() {
+
+                override fun onPageFinished(view: WebView?, url: String?) {
+                    dialog?.showLoader(false)
+                    super.onPageFinished(view, url)
+                }
+
                 override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
 
-                    val isOpenApp = if (url.contains("whatsapp://send") || url.contains("https://web.whatsapp.com/send?text=") || url.contains("fb-messenger") && popup != null) {
-                        openSite!!.openWhatsApp(url, mWebViewComments!!)
-                        true
-                    } else if (url.contains("tg:msg_url")) {
-                        openSite!!.openApp(url)
-                        true
-                    }else if (openSite!!.isOpenSupportInBrowser(url)) {
-                        openSite!!.openPrivacyPolicy(url)
-                        true
-                    } else if (url.contains("mailto:to") || url.contains("mailto:")) {
-                        openSite!!.openApp(url)
-                        true
-                    }else false
+                    val isOpenApp =
+                        when {
+                            (url.contains("whatsapp://send") || url.contains("https://web.whatsapp.com/send?text=") || url.contains(
+                                "fb-messenger"
+                            ) && popup != null
+                                    ) -> {
+                                openSite!!.openWhatsApp(url, mWebViewComments!!)
+                                true
+                            }
+                            url.contains("tg:msg_url") -> {
+                                openSite!!.openApp(url)
+                                true
+                            }
+                            openSite!!.isOpenSupportInBrowser(url) -> {
+                                openSite!!.openPrivacyPolicy(url)
+                                true
+                            }
+                            url.contains("mailto:to") || url.contains("mailto:") -> {
+                                openSite!!.openApp(url)
+                                true
+                            }
+                            url.contains("/auth/facebook") -> {
+                                LoginManager.getInstance().logInWithReadPermissions(this@MainActivity, Arrays.asList("public_profile"));
+                                true
+                            }
+                            else  -> false
+                        }
 
-                    if(isOpenApp) return false
+                    if (isOpenApp) return false
 
                     if (popup != null) {
                         if (url.contains(AUTH) || url.contains(CONSENT)) {
@@ -500,9 +714,22 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
 
             popup!!.webChromeClient = object : WebChromeClient() {
 
-                override fun onShowFileChooser(webView: WebView?, filePathCallback: ValueCallback<Array<Uri>>?, fileChooserParams: FileChooserParams?): Boolean {
+                override fun onCreateWindow(
+                    view: WebView?,
+                    isDialog: Boolean,
+                    isUserGesture: Boolean,
+                    resultMsg: Message?
+                ): Boolean {
+                    return super.onCreateWindow(view, isDialog, isUserGesture, resultMsg)
+                }
+
+                override fun onShowFileChooser(
+                    webView: WebView?,
+                    filePathCallback: ValueCallback<Array<Uri>>?,
+                    fileChooserParams: FileChooserParams?
+                ): Boolean {
                     uploadMessage = filePathCallback
-                    openPhoto.selectImage(context = this@MainActivity){
+                    openPhoto.selectImage(context = this@MainActivity) {
                         uploadMessage?.onReceiveValue(arrayOf())
                         uploadMessage = null
                     }
@@ -537,7 +764,6 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
     override fun reloadView() {
         //mWebViewComments!!.reload()
     }
-
     companion object {
         const val TAG = "MainActivity"
 
@@ -557,36 +783,50 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
         handleOnCreate()
     }
 
-    override fun onPermissionRationaleShouldBeShown(permission: PermissionRequest?, token: PermissionToken?) {
+    override fun onPermissionRationaleShouldBeShown(
+        permission: PermissionRequest?,
+        token: PermissionToken?
+    ) {
 
     }
 
     override fun onPermissionDenied(response: PermissionDeniedResponse?) {
         Toast.makeText(this, "Please accept camera permission", Toast.LENGTH_LONG).show()
     }
-}
-```
 
+    private fun initFacebook() {
 
-### 11) Customize SSO Button Click
-__________
+        this.mFacebookCallbackManager = CallbackManager.Factory.create()
 
-We can add condition from onConsoleMessage function.
+        LoginManager.getInstance().registerCallback(mFacebookCallbackManager,
+            object : FacebookCallback<LoginResult?> {
+                override fun onSuccess(loginResult: LoginResult?) {
 
-```kotlin
-override fun onConsoleMessage(consoleMessage: ConsoleMessage): Boolean {
+                    loginResult?.accessToken?.let {
+                        authManager.loginViaFacebook(it.token){
+                            it?.let {
+                                val cookieManager = CookieManager.getInstance()
+                                cookieManager.setAcceptCookie(true)
+                                val tokenCookie = "token=$it";
+                                cookieManager.setCookie(mWebViewComments?.url, tokenCookie)
+                                mWebViewComments?.loadUrl(mWebViewComments!!.url?:urlManager.getCommentsUrl())
+                            }?:run{
+                                Toast.makeText(this@MainActivity, "Can not login", Toast.LENGTH_LONG).show()
+                            }
+                        }
+                    } ?: run {
+                        Toast.makeText(this@MainActivity, "Can not login", Toast.LENGTH_LONG).show()
+                    }
+                }
 
-   if (consoleMessage.message().contains("logout-clicked")) {
-       logoutSSO()
-   } else if (consoleMessage.message().contains("sso-sign-in")) {
-       AlertDialog.Builder(this@MainActivity)
-           .setMessage("Sign in button clicked")
-           .setPositiveButton(
-               "OK"
-           ) { _, _ -> }
-           .create()
-           .show()
-   }
-   return super.onConsoleMessage(consoleMessage)
+                override fun onCancel() {
+                    Toast.makeText(this@MainActivity, "Can not login", Toast.LENGTH_LONG).show()
+                }
+
+                override fun onError(exception: FacebookException) {
+                    Toast.makeText(this@MainActivity, exception.message, Toast.LENGTH_LONG).show()
+                }
+            })
+    }
 }
 ```
