@@ -623,13 +623,12 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
                                     "Can not login",
                                     Toast.LENGTH_LONG
                                 ).show()
-                                isSocialLoginProcess = false
                             }
                         }
                     } ?: run {
                         Toast.makeText(this@MainActivity, "Can not login", Toast.LENGTH_LONG).show()
-                        isSocialLoginProcess = false
                     }
+                    isSocialLoginProcess = false
                 }
 
                 override fun onCancel() {
