@@ -50,9 +50,7 @@ import android.preference.PreferenceManager
 import android.content.SharedPreferences
 
 import android.webkit.CookieSyncManager
-
-
-
+import java.net.URLDecoder
 
 
 class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListener {
@@ -306,8 +304,13 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
                 } else if (url.contains("mailto:to") || url.contains("mailto:")) {
                     openSite!!.openApp(url)
                 } else {
-                    if (!url.needOpenWithOther() && !url.equals(urlManager.getCommentsUrl())) {
+                    val urlDecoded = URLDecoder.decode(url, "UTF-8")
+                    val originUrlDecoded = URLDecoder.decode(urlManager.getPowerBarUrl(), "UTF-8")
+
+                    if (!url.needOpenWithOther() && !urlDecoded.equals(originUrlDecoded)) {
                         dialog!!.openDialogOther(url)
+                    }else{
+                        return false
                     }
                 }
                 return true
@@ -349,8 +352,14 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
                 } else if (url.contains("mailto:to") || url.contains("mailto:")) {
                     openSite!!.openApp(url)
                 } else {
-                    if (!url.needOpenWithOther() && !url.equals(urlManager.getCommentsUrl())) {
+
+                    val urlDecoded = URLDecoder.decode(url, "UTF-8")
+                    val originUrlDecoded = URLDecoder.decode(urlManager.getCommentsUrl(), "UTF-8")
+
+                    if (!url.needOpenWithOther() && !urlDecoded.equals(originUrlDecoded)) {
                         dialog!!.openDialogOther(url)
+                    }else{
+                        return false
                     }
                 }
                 return true
