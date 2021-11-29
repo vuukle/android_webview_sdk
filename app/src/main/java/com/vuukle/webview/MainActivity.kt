@@ -59,6 +59,7 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
 
     // Auth Manager
     private val authManager = AuthManager(this)
+    private var isSocialLoginProcess = false
 
     //URL manager for get urls loading into WebView
     private val urlManager = UrlManager(this)
@@ -309,7 +310,7 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
 
                     if (!url.needOpenWithOther() && !urlDecoded.equals(originUrlDecoded)) {
                         dialog!!.openDialogOther(url)
-                    }else{
+                    } else {
                         return false
                     }
                 }
@@ -358,7 +359,7 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
 
                     if (!url.needOpenWithOther() && !urlDecoded.equals(originUrlDecoded)) {
                         dialog!!.openDialogOther(url)
-                    }else{
+                    } else {
                         return false
                     }
                 }
@@ -451,6 +452,8 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
 
                 override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
 
+                    if(isSocialLoginProcess) return false
+
                     val isOpenApp =
                         when {
                             (url.contains("whatsapp://send") || url.contains("https://web.whatsapp.com/send?text=") || url.contains(
@@ -464,7 +467,7 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
                                 openSite!!.openApp(url)
                                 true
                             }
-                           openSite!!.isOpenSupportInBrowser(url) -> {
+                            openSite!!.isOpenSupportInBrowser(url) -> {
                                 openSite!!.openPrivacyPolicy(url)
                                 true
                             }
@@ -472,11 +475,17 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
                                 openSite!!.openApp(url)
                                 true
                             }
-                            url.contains("/auth/facebook") -> {
-                                LoginManager.getInstance().logInWithReadPermissions(this@MainActivity, Arrays.asList("public_profile"));
+                            url.contains("vuukle.com/login/auth/facebook") -> {
+                                if (!isSocialLoginProcess) {
+                                    LoginManager.getInstance().logInWithReadPermissions(
+                                        this@MainActivity,
+                                        Arrays.asList("public_profile")
+                                    );
+                                    isSocialLoginProcess = true
+                                }
                                 true
                             }
-                            else  -> false
+                            else -> false
                         }
 
                     if (isOpenApp) return false
@@ -489,7 +498,6 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
                                 if (url.contains(CONSENT)) hideKeyboard()
                             }
                         } else {
-
                             if (!url.needOpenWithOther()) {
                                 dialog!!.openDialogOther(url)
                                 dialog!!
@@ -563,6 +571,7 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
     override fun reloadView() {
         //mWebViewComments!!.reload()
     }
+
     companion object {
         const val TAG = "MainActivity"
 
@@ -582,15 +591,12 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
         handleOnCreate()
     }
 
-    override fun onPermissionRationaleShouldBeShown(
-        permission: PermissionRequest?,
-        token: PermissionToken?
-    ) {
-
-    }
-
     override fun onPermissionDenied(response: PermissionDeniedResponse?) {
         Toast.makeText(this, "Please accept camera permission", Toast.LENGTH_LONG).show()
+    }
+
+    override fun onPermissionRationaleShouldBeShown(p0: PermissionRequest?, p1: PermissionToken?) {
+
     }
 
     private fun initFacebook() {
@@ -602,28 +608,38 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
                 override fun onSuccess(loginResult: LoginResult?) {
 
                     loginResult?.accessToken?.let {
-                        authManager.loginViaFacebook(it.token){
+                        authManager.loginViaFacebook(it.token) {
                             it?.let {
                                 val cookieManager = CookieManager.getInstance()
                                 cookieManager.setAcceptCookie(true)
                                 val tokenCookie = "token=$it";
                                 cookieManager.setCookie(mWebViewComments?.url, tokenCookie)
-                                mWebViewComments?.loadUrl(mWebViewComments!!.url?:urlManager.getCommentsUrl())
-                            }?:run{
-                                Toast.makeText(this@MainActivity, "Can not login", Toast.LENGTH_LONG).show()
+                                mWebViewComments?.loadUrl(
+                                    mWebViewComments!!.url ?: urlManager.getCommentsUrl()
+                                )
+                            } ?: run {
+                                Toast.makeText(
+                                    this@MainActivity,
+                                    "Can not login",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                                isSocialLoginProcess = false
                             }
                         }
                     } ?: run {
                         Toast.makeText(this@MainActivity, "Can not login", Toast.LENGTH_LONG).show()
+                        isSocialLoginProcess = false
                     }
                 }
 
                 override fun onCancel() {
                     Toast.makeText(this@MainActivity, "Can not login", Toast.LENGTH_LONG).show()
+                    isSocialLoginProcess = false
                 }
 
                 override fun onError(exception: FacebookException) {
                     Toast.makeText(this@MainActivity, exception.message, Toast.LENGTH_LONG).show()
+                    isSocialLoginProcess = false
                 }
             })
     }
