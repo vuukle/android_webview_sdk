@@ -308,8 +308,6 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
                 } else {
                     if (!url.needOpenWithOther() && !url.equals(urlManager.getCommentsUrl())) {
                         dialog!!.openDialogOther(url)
-                    }else{
-                        return false
                     }
                 }
                 return true
@@ -351,7 +349,7 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
                 } else if (url.contains("mailto:to") || url.contains("mailto:")) {
                     openSite!!.openApp(url)
                 } else {
-                    if (!url.needOpenWithOther()) {
+                    if (!url.needOpenWithOther() && !url.equals(urlManager.getCommentsUrl())) {
                         dialog!!.openDialogOther(url)
                     }
                 }
