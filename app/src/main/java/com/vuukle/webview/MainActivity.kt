@@ -292,7 +292,6 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
             ?: "Mozilla/5.0 (Linux; Android 11) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.91 Mobile Safari/537.36"
         mWebViewPowerBar?.webViewClient = object : WebViewClient() {
 
-
             override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
                 //Clicked url
                 if (url.contains("whatsapp://send") || url.contains("https://web.whatsapp.com/send?text=") || url.contains(
@@ -307,8 +306,10 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
                 } else if (url.contains("mailto:to") || url.contains("mailto:")) {
                     openSite!!.openApp(url)
                 } else {
-                    if (!url.needOpenWithOther()) {
+                    if (!url.needOpenWithOther() && !url.equals(urlManager.getCommentsUrl())) {
                         dialog!!.openDialogOther(url)
+                    }else{
+                        return false
                     }
                 }
                 return true
@@ -338,9 +339,9 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
             override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
 
                 //Clicked url
-                if (url.contains("whatsapp://send") || url.contains("https://web.whatsapp.com/send?text=") || url.contains(
-                        "fb-messenger"
-                    ) && popup != null
+                if (url.contains("whatsapp://send") ||
+                    url.contains("https://web.whatsapp.com/send?text=") ||
+                    url.contains("fb-messenger") && popup != null
                 ) {
                     openSite!!.openWhatsApp(url, mWebViewComments!!)
                 } else if (url.contains("tg:msg_url")) {
