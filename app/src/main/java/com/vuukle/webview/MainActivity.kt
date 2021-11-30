@@ -11,7 +11,6 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Message
-import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import android.view.inputmethod.InputMethodManager
@@ -41,25 +40,24 @@ import com.vuukle.webview.helper.AnimationHelper
 import com.vuukle.webview.manager.auth.AuthManager
 import com.vuukle.webview.manager.url.UrlManager
 import com.vuukle.webview.utils.*
-import okhttp3.Cookie
 import java.util.*
 import android.webkit.WebViewClient
 
-import android.preference.PreferenceManager
-
-import android.content.SharedPreferences
-
-import android.webkit.CookieSyncManager
+import com.facebook.share.Sharer
+import com.vuukle.webview.helper.UrlHelper
 import java.net.URLDecoder
+import com.facebook.share.model.ShareLinkContent
+import com.facebook.share.widget.ShareDialog
 
 
 class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListener {
 
+    private var fbShareDialog: ShareDialog? = null
     private var mFacebookCallbackManager: CallbackManager? = null
 
     // Auth Manager
     private val authManager = AuthManager(this)
-    private var isSocialLoginProcess = false
+    private var fbProcessRuning = false
 
     //URL manager for get urls loading into WebView
     private val urlManager = UrlManager(this)
@@ -452,7 +450,7 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
 
                 override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
 
-                    if(isSocialLoginProcess) return false
+                    if(fbProcessRuning) return false
 
                     val isOpenApp =
                         when {
@@ -476,13 +474,26 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
                                 true
                             }
                             url.contains("vuukle.com/login/auth/facebook") -> {
-                                if (!isSocialLoginProcess) {
+                                if (!fbProcessRuning) {
                                     LoginManager.getInstance().logInWithReadPermissions(
                                         this@MainActivity,
                                         Arrays.asList("public_profile")
                                     );
-                                    isSocialLoginProcess = true
+                                    fbProcessRuning = true
                                 }
+                                true
+                            }
+                            url.contains("facebook.com/share")-> {
+                                val queryData = UrlHelper.getQueryData(url)
+                                val contentBuilder = ShareLinkContent.Builder()
+                                if(queryData.containsKey("u")){
+                                    contentBuilder.setContentUrl(Uri.parse(queryData["u"]))
+                                }
+                                if(queryData.containsKey("quote")){
+                                    contentBuilder.setQuote(queryData["quote"])
+                                }
+                                fbShareDialog?.show(contentBuilder.build())
+                                fbProcessRuning = true
                                 true
                             }
                             else -> false
@@ -603,6 +614,24 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
 
         this.mFacebookCallbackManager = CallbackManager.Factory.create()
 
+        fbShareDialog = ShareDialog(this)
+        fbShareDialog!!.registerCallback(mFacebookCallbackManager, object : FacebookCallback<Sharer.Result?> {
+
+            override fun onSuccess(result: Sharer.Result?) {
+                fbProcessRuning = false
+            }
+
+            override fun onCancel() {
+                Toast.makeText(this@MainActivity, "Cancel", Toast.LENGTH_LONG).show()
+                fbProcessRuning = false
+            }
+
+            override fun onError(error: FacebookException) {
+                Toast.makeText(this@MainActivity, error.message, Toast.LENGTH_LONG).show()
+                fbProcessRuning = false
+            }
+        })
+
         LoginManager.getInstance().registerCallback(mFacebookCallbackManager,
             object : FacebookCallback<LoginResult?> {
                 override fun onSuccess(loginResult: LoginResult?) {
@@ -628,17 +657,17 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
                     } ?: run {
                         Toast.makeText(this@MainActivity, "Can not login", Toast.LENGTH_LONG).show()
                     }
-                    isSocialLoginProcess = false
+                    fbProcessRuning = false
                 }
 
                 override fun onCancel() {
                     Toast.makeText(this@MainActivity, "Can not login", Toast.LENGTH_LONG).show()
-                    isSocialLoginProcess = false
+                    fbProcessRuning = false
                 }
 
                 override fun onError(exception: FacebookException) {
                     Toast.makeText(this@MainActivity, exception.message, Toast.LENGTH_LONG).show()
-                    isSocialLoginProcess = false
+                    fbProcessRuning = false
                 }
             })
     }
