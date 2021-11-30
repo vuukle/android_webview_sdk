@@ -450,7 +450,10 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
 
                 override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
 
-                    if(fbProcessRuning) return false
+                    if(fbProcessRuning) {
+                        emptyDialog()
+                        return false
+                    }
 
                     val isOpenApp =
                         when {
@@ -499,19 +502,25 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
                             else -> false
                         }
 
-                    if (isOpenApp) return false
+                    if (isOpenApp) {
+                        emptyDialog()
+                        return false
+                    }
 
                     if (popup != null) {
+                        emptyDialog()
                         if (url.contains(AUTH) || url.contains(CONSENT)) {
-                            if (url.contains(errorTwitter)) dialog!!.close() else {
-                                popup!!.loadUrl(url)
-                                dialog!!.openDialog(popup)
+                            if (url.contains(errorTwitter))
+                                dialog!!.close()
+                            else {
+                                dialog?.showLoader(true)
+                                popup?.loadUrl(url)
+                                dialog?.openDialog(popup)
                                 if (url.contains(CONSENT)) hideKeyboard()
                             }
                         } else {
                             if (!url.needOpenWithOther()) {
-                                dialog!!.openDialogOther(url)
-                                dialog!!
+                                dialog?.openDialogOther(url)
                             }
                         }
                     }
@@ -618,15 +627,18 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
         fbShareDialog!!.registerCallback(mFacebookCallbackManager, object : FacebookCallback<Sharer.Result?> {
 
             override fun onSuccess(result: Sharer.Result?) {
+                emptyDialog()
                 fbProcessRuning = false
             }
 
             override fun onCancel() {
+                emptyDialog()
                 Toast.makeText(this@MainActivity, "Cancel", Toast.LENGTH_LONG).show()
                 fbProcessRuning = false
             }
 
             override fun onError(error: FacebookException) {
+                emptyDialog()
                 Toast.makeText(this@MainActivity, error.message, Toast.LENGTH_LONG).show()
                 fbProcessRuning = false
             }
@@ -661,14 +673,22 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
                 }
 
                 override fun onCancel() {
+                    emptyDialog()
                     Toast.makeText(this@MainActivity, "Can not login", Toast.LENGTH_LONG).show()
                     fbProcessRuning = false
                 }
 
                 override fun onError(exception: FacebookException) {
+                    emptyDialog()
                     Toast.makeText(this@MainActivity, exception.message, Toast.LENGTH_LONG).show()
                     fbProcessRuning = false
                 }
             })
+    }
+
+    fun emptyDialog(){
+        popup?.clearView()
+        popup?.loadUrl("about:blank")
+        dialog?.reset()
     }
 }

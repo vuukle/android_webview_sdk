@@ -34,9 +34,15 @@ class Dialog(private val context: MainActivity) {
     private val openPhoto = OpenPhoto()
 
     private var progressBar: ProgressBar? = null
+
     fun openDialog(popup: WebView?) {
         this.popup = popup
         initLinearLayout()
+    }
+
+    fun reset(){
+        popup?.clearView()
+        popup?.loadUrl("about:blank")
     }
 
     fun openDialogOther(url: String?) {
@@ -166,12 +172,14 @@ class Dialog(private val context: MainActivity) {
     }
 
     fun close() {
+
         if (dialog != null) {
-            wrapper!!.removeView(popup)
-            dialog!!.dismiss()
+            wrapper?.removeView(popup)
+            dialog?.dismiss()
             openDialog = true
             dialog = null
-            popup!!.destroy()
+            popup?.clearView()
+            popup?.destroy()
             popup = null
         }
 
