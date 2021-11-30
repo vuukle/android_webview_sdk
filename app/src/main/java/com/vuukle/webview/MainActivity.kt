@@ -166,7 +166,7 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
         }
 
         logoutSSOButton.setOnClickListener {
-            logoutSSO()
+            logout()
         }
     }
 
@@ -176,12 +176,14 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
         authManager.login(email, userName)
         // Clear browser history
         mWebViewComments?.clearHistory()
+        // Logout facbook if need
+        LoginManager.getInstance().logOut()
         // Reload WebView using urlManager
         mWebViewComments?.loadUrl(urlManager.getCommentsUrl())
     }
 
     // Logout user SSO
-    private fun logoutSSO() {
+    private fun logout() {
         // Logout user
         authManager.logout()
         // Clear all cookies
@@ -405,7 +407,7 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
         override fun onConsoleMessage(consoleMessage: ConsoleMessage): Boolean {
 
             if (consoleMessage.message().contains("logout-clicked")) {
-                logoutSSO()
+                logout()
             } else if (consoleMessage.message().contains("sso-sign-in")) {
                 AlertDialog.Builder(this@MainActivity)
                     .setMessage("Sign in button clicked")
