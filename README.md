@@ -173,7 +173,25 @@ If this operation is successfully completed, need to add user token in browser c
         }
     })
 ```
-### 11) Customize SSO Button Click
+### 11) Integration Facebook share
+Implement Facebook share with facebook-login-sdk
+https://developers.facebook.com/docs/sharing/android/
+```kotlin
+        if(url.contains("facebook.com/share") {
+            val queryData = UrlHelper.getQueryData(url)
+            val contentBuilder = ShareLinkContent.Builder()
+            if(queryData.containsKey("u")){
+                contentBuilder.setContentUrl(Uri.parse(queryData["u"]))
+            }
+            if(queryData.containsKey("quote")){
+                contentBuilder.setQuote(queryData["quote"])
+            }
+            fbShareDialog?.show(contentBuilder.build())
+            fbProcessRuning = true
+            true
+        }
+```
+### 12) Customize SSO Button Click
 __________
 
 We can add condition from onConsoleMessage function.
@@ -195,71 +213,18 @@ override fun onConsoleMessage(consoleMessage: ConsoleMessage): Boolean {
    return super.onConsoleMessage(consoleMessage)
 }
 ```
-### 12) Full sample:
+### 13) Full sample:
 ----------
 ```kotlin
 
-package com.vuukle.webview
-
-import android.Manifest
-import android.app.Activity
-import android.app.AlertDialog
-import android.content.Context
-import android.content.DialogInterface
-import android.content.Intent
-import android.content.pm.PackageManager
-import android.net.Uri
-import android.os.Build
-import android.os.Bundle
-import android.os.Message
-import android.util.Log
-import android.view.MotionEvent
-import android.view.View
-import android.view.inputmethod.InputMethodManager
-import android.webkit.*
-import android.webkit.WebView.WebViewTransport
-import android.widget.Button
-import android.widget.LinearLayout
-import android.widget.ScrollView
-import android.widget.Toast
-import androidx.annotation.RequiresApi
-import androidx.appcompat.app.ActionBar
-import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
-import com.facebook.CallbackManager
-import com.facebook.FacebookCallback
-import com.facebook.FacebookException
-import com.facebook.login.LoginManager
-import com.facebook.login.LoginResult
-import com.karumi.dexter.PermissionToken
-import com.karumi.dexter.listener.PermissionDeniedResponse
-import com.karumi.dexter.listener.PermissionGrantedResponse
-import com.karumi.dexter.listener.PermissionRequest
-import com.karumi.dexter.listener.single.PermissionListener
-import com.vuukle.webview.ext.needOpenWithOther
-import com.vuukle.webview.helper.AnimationHelper
-import com.vuukle.webview.manager.auth.AuthManager
-import com.vuukle.webview.manager.url.UrlManager
-import com.vuukle.webview.utils.*
-import okhttp3.Cookie
-import java.util.*
-import android.webkit.WebViewClient
-
-import android.preference.PreferenceManager
-
-import android.content.SharedPreferences
-
-import android.webkit.CookieSyncManager
-import java.net.URLDecoder
-
-
 class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListener {
 
+    private var fbShareDialog: ShareDialog? = null
     private var mFacebookCallbackManager: CallbackManager? = null
 
     // Auth Manager
     private val authManager = AuthManager(this)
+    private var fbProcessRuning = false
 
     //URL manager for get urls loading into WebView
     private val urlManager = UrlManager(this)
@@ -510,7 +475,7 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
 
                     if (!url.needOpenWithOther() && !urlDecoded.equals(originUrlDecoded)) {
                         dialog!!.openDialogOther(url)
-                    }else{
+                    } else {
                         return false
                     }
                 }
@@ -559,7 +524,7 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
 
                     if (!url.needOpenWithOther() && !urlDecoded.equals(originUrlDecoded)) {
                         dialog!!.openDialogOther(url)
-                    }else{
+                    } else {
                         return false
                     }
                 }
@@ -652,6 +617,8 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
 
                 override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
 
+                    if(fbProcessRuning) return false
+
                     val isOpenApp =
                         when {
                             (url.contains("whatsapp://send") || url.contains("https://web.whatsapp.com/send?text=") || url.contains(
@@ -673,11 +640,30 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
                                 openSite!!.openApp(url)
                                 true
                             }
-                            url.contains("/auth/facebook") -> {
-                                LoginManager.getInstance().logInWithReadPermissions(this@MainActivity, Arrays.asList("public_profile"));
+                            url.contains("vuukle.com/login/auth/facebook") -> {
+                                if (!fbProcessRuning) {
+                                    LoginManager.getInstance().logInWithReadPermissions(
+                                        this@MainActivity,
+                                        Arrays.asList("public_profile")
+                                    );
+                                    fbProcessRuning = true
+                                }
                                 true
                             }
-                            else  -> false
+                            url.contains("facebook.com/share")-> {
+                                val queryData = UrlHelper.getQueryData(url)
+                                val contentBuilder = ShareLinkContent.Builder()
+                                if(queryData.containsKey("u")){
+                                    contentBuilder.setContentUrl(Uri.parse(queryData["u"]))
+                                }
+                                if(queryData.containsKey("quote")){
+                                    contentBuilder.setQuote(queryData["quote"])
+                                }
+                                fbShareDialog?.show(contentBuilder.build())
+                                fbProcessRuning = true
+                                true
+                            }
+                            else -> false
                         }
 
                     if (isOpenApp) return false
@@ -690,7 +676,6 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
                                 if (url.contains(CONSENT)) hideKeyboard()
                             }
                         } else {
-
                             if (!url.needOpenWithOther()) {
                                 dialog!!.openDialogOther(url)
                                 dialog!!
@@ -764,6 +749,7 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
     override fun reloadView() {
         //mWebViewComments!!.reload()
     }
+
     companion object {
         const val TAG = "MainActivity"
 
@@ -783,48 +769,72 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
         handleOnCreate()
     }
 
-    override fun onPermissionRationaleShouldBeShown(
-        permission: PermissionRequest?,
-        token: PermissionToken?
-    ) {
-
-    }
-
     override fun onPermissionDenied(response: PermissionDeniedResponse?) {
         Toast.makeText(this, "Please accept camera permission", Toast.LENGTH_LONG).show()
+    }
+
+    override fun onPermissionRationaleShouldBeShown(p0: PermissionRequest?, p1: PermissionToken?) {
+
     }
 
     private fun initFacebook() {
 
         this.mFacebookCallbackManager = CallbackManager.Factory.create()
 
+        fbShareDialog = ShareDialog(this)
+        fbShareDialog!!.registerCallback(mFacebookCallbackManager, object : FacebookCallback<Sharer.Result?> {
+
+            override fun onSuccess(result: Sharer.Result?) {
+                fbProcessRuning = false
+            }
+
+            override fun onCancel() {
+                Toast.makeText(this@MainActivity, "Cancel", Toast.LENGTH_LONG).show()
+                fbProcessRuning = false
+            }
+
+            override fun onError(error: FacebookException) {
+                Toast.makeText(this@MainActivity, error.message, Toast.LENGTH_LONG).show()
+                fbProcessRuning = false
+            }
+        })
+
         LoginManager.getInstance().registerCallback(mFacebookCallbackManager,
             object : FacebookCallback<LoginResult?> {
                 override fun onSuccess(loginResult: LoginResult?) {
 
                     loginResult?.accessToken?.let {
-                        authManager.loginViaFacebook(it.token){
+                        authManager.loginViaFacebook(it.token) {
                             it?.let {
                                 val cookieManager = CookieManager.getInstance()
                                 cookieManager.setAcceptCookie(true)
                                 val tokenCookie = "token=$it";
                                 cookieManager.setCookie(mWebViewComments?.url, tokenCookie)
-                                mWebViewComments?.loadUrl(mWebViewComments!!.url?:urlManager.getCommentsUrl())
-                            }?:run{
-                                Toast.makeText(this@MainActivity, "Can not login", Toast.LENGTH_LONG).show()
+                                mWebViewComments?.loadUrl(
+                                    mWebViewComments!!.url ?: urlManager.getCommentsUrl()
+                                )
+                            } ?: run {
+                                Toast.makeText(
+                                    this@MainActivity,
+                                    "Can not login",
+                                    Toast.LENGTH_LONG
+                                ).show()
                             }
                         }
                     } ?: run {
                         Toast.makeText(this@MainActivity, "Can not login", Toast.LENGTH_LONG).show()
                     }
+                    fbProcessRuning = false
                 }
 
                 override fun onCancel() {
                     Toast.makeText(this@MainActivity, "Can not login", Toast.LENGTH_LONG).show()
+                    fbProcessRuning = false
                 }
 
                 override fun onError(exception: FacebookException) {
                     Toast.makeText(this@MainActivity, exception.message, Toast.LENGTH_LONG).show()
+                    fbProcessRuning = false
                 }
             })
     }
