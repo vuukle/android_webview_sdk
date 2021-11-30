@@ -176,7 +176,7 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
         authManager.login(email, userName)
         // Clear browser history
         mWebViewComments?.clearHistory()
-        // Logout facbook if need
+        // Logout facebook
         LoginManager.getInstance().logOut()
         // Reload WebView using urlManager
         mWebViewComments?.loadUrl(urlManager.getCommentsUrl())
