@@ -11,6 +11,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Message
+import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import android.view.inputmethod.InputMethodManager
@@ -480,9 +481,11 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
                             }
                             url.contains("vuukle.com/login/auth/facebook") -> {
                                 if (!fbProcessRuning) {
+                                    val loginManager =
+                                    LoginManager.getInstance().logOut()
                                     LoginManager.getInstance().logInWithReadPermissions(
                                         this@MainActivity,
-                                        Arrays.asList("public_profile")
+                                        Arrays.asList("public_profile", "email")
                                     );
                                     fbProcessRuning = true
                                 }
@@ -510,7 +513,7 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
                     }
 
                     if (popup != null) {
-                        emptyDialog()
+
                         if (url.contains(AUTH) || url.contains(CONSENT)) {
                             if (url.contains(errorTwitter))
                                 dialog!!.close()
