@@ -26,9 +26,6 @@ import androidx.appcompat.app.ActionBar
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import com.facebook.CallbackManager
-import com.facebook.FacebookCallback
-import com.facebook.FacebookException
 import com.facebook.login.LoginManager
 import com.facebook.login.LoginResult
 import com.karumi.dexter.PermissionToken
@@ -43,6 +40,7 @@ import com.vuukle.webview.manager.url.UrlManager
 import com.vuukle.webview.utils.*
 import java.util.*
 import android.webkit.WebViewClient
+import com.facebook.*
 
 import com.facebook.share.Sharer
 import com.vuukle.webview.helper.UrlHelper
@@ -481,8 +479,9 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
                             }
                             url.contains("vuukle.com/login/auth/facebook") -> {
                                 if (!fbProcessRuning) {
-                                    val loginManager =
-                                    LoginManager.getInstance().logOut()
+                                    if (AccessToken.getCurrentAccessToken() != null) {
+                                        LoginManager.getInstance().logOut();
+                                    }
                                     LoginManager.getInstance().logInWithReadPermissions(
                                         this@MainActivity,
                                         Arrays.asList("public_profile", "email")
