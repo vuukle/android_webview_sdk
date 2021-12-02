@@ -48,7 +48,6 @@ import java.net.URLDecoder
 import com.facebook.share.model.ShareLinkContent
 import com.facebook.share.widget.ShareDialog
 
-
 class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListener {
 
     var fbShareDialog: ShareDialog? = null
@@ -651,24 +650,17 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
         LoginManager.getInstance().registerCallback(mFacebookCallbackManager,
             object : FacebookCallback<LoginResult?> {
                 override fun onSuccess(loginResult: LoginResult?) {
-
                     loginResult?.accessToken?.let {
-                        authManager.loginViaFacebook(it.token) {
-                            it?.let {
+                        authManager.loginViaFacebook(it.token) { token ->
+                            if(token != null){
                                 val cookieManager = CookieManager.getInstance()
                                 cookieManager.setAcceptCookie(true)
-                                val tokenCookie = "token=$it";
+                                val tokenCookie = "token=$token";
                                 authManager.setAutorizationCookieForVuukle(urlManager, tokenCookie)
-                                mWebViewPowerBar?.loadUrl(
-                                    mWebViewPowerBar!!.url ?: urlManager.getPowerBarUrl()
-                                )
-                                mWebViewComments?.loadUrl(
-                                    mWebViewComments!!.url ?: urlManager.getCommentsUrl()
-                                )
-                                dialog?.popup?.loadUrl(
-                                    dialog?.popup?.url!!
-                                )
-                            } ?: run {
+                                mWebViewPowerBar?.loadUrl(mWebViewPowerBar!!.url ?: urlManager.getPowerBarUrl())
+                                mWebViewComments?.loadUrl(mWebViewComments!!.url ?: urlManager.getCommentsUrl())
+                                dialog?.popup?.loadUrl(dialog?.popup?.url!!)
+                            }else{
                                 Toast.makeText(
                                     this@MainActivity,
                                     "Can not login",
