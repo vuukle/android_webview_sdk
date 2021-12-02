@@ -29,6 +29,7 @@ class UrlManager(activity: AppCompatActivity) {
         urls.add(UrlHelper.getHostUrl(getCommentsUrl()))
         urls.add(UrlHelper.getHostUrl(getPowerBarUrl()))
         urls.add("https://news.vuukle.com")
+        urls.add("https://dash.vuukle.com")
         return urls
     }
 }
