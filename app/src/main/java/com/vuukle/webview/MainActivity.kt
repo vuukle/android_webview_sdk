@@ -51,12 +51,12 @@ import com.facebook.share.widget.ShareDialog
 
 class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListener {
 
-    private var fbShareDialog: ShareDialog? = null
-    private var mFacebookCallbackManager: CallbackManager? = null
+    var fbShareDialog: ShareDialog? = null
+    var mFacebookCallbackManager: CallbackManager? = null
 
     // Auth Manager
     private val authManager = AuthManager(this)
-    private var fbProcessRuning = false
+    var fbProcessRuning = false
 
     //URL manager for get urls loading into WebView
     private val urlManager = UrlManager(this)
@@ -659,8 +659,14 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
                                 cookieManager.setAcceptCookie(true)
                                 val tokenCookie = "token=$it";
                                 authManager.setAutorizationCookieForVuukle(urlManager, tokenCookie)
+                                mWebViewPowerBar?.loadUrl(
+                                    mWebViewPowerBar!!.url ?: urlManager.getPowerBarUrl()
+                                )
                                 mWebViewComments?.loadUrl(
                                     mWebViewComments!!.url ?: urlManager.getCommentsUrl()
+                                )
+                                dialog?.popup?.loadUrl(
+                                    dialog?.popup?.url!!
                                 )
                             } ?: run {
                                 Toast.makeText(

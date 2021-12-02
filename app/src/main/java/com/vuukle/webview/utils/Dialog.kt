@@ -12,18 +12,22 @@ import android.webkit.*
 import android.webkit.WebView.WebViewTransport
 import android.widget.*
 import android.widget.RelativeLayout.TRUE
+import com.facebook.AccessToken
+import com.facebook.login.LoginManager
+import com.facebook.share.model.ShareLinkContent
 import com.vuukle.webview.MainActivity
 import com.vuukle.webview.helper.UrlHelper
+import java.util.*
 
 class Dialog(private val context: MainActivity) {
 
     private var dialog: AlertDialog? = null
     private var openDialog = true
     private var wrapper: RelativeLayout? = null
-    private var popup: WebView? = null
+    var popup: WebView? = null
     private var webView: WebView? = null
     private var onCloseListener: DialogCancelListener? = null
-    private var mWebviewPop: WebView? = null
+    var mWebviewPop: WebView? = null
 
     @JvmField
     var uploadMessage: ValueCallback<Array<Uri>>? = null
@@ -81,16 +85,44 @@ class Dialog(private val context: MainActivity) {
 
             override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
 
-                if (url.contains("mailto:to") || url.contains("mailto:")) {
-                    openSite!!.openApp(url)
-                } else if (url.contains("whatsapp://send") || url.contains("fb-messenger") && popup != null) {
-                    openSite!!.openWhatsApp(url, popup!!)
-                    openSite!!.openMessenger(url)
-                } else if (url.contains("tg:msg_url")) {
-                    openSite!!.openApp(url)
-                }else {
-                    getRedirectUrl(url)
-                    return super.shouldOverrideUrlLoading(view, url)
+                when {
+                    (url.contains("mailto:to") || url.contains("mailto:")) -> {
+                        openSite!!.openApp(url)
+                    }
+                    (url.contains("whatsapp://send") || url.contains("fb-messenger") && popup != null) -> {
+                        openSite!!.openWhatsApp(url, popup!!)
+                        openSite!!.openMessenger(url)
+                    } (url.contains("tg:msg_url")) -> {
+                        openSite!!.openApp(url)
+                    }
+                    url.contains("vuukle.com/login/auth/facebook") -> {
+                        if (!context.fbProcessRuning) {
+                            if (AccessToken.getCurrentAccessToken() != null) {
+                                LoginManager.getInstance().logOut();
+                            }
+                            LoginManager.getInstance().logInWithReadPermissions(
+                                context,
+                                Arrays.asList("public_profile", "email")
+                            );
+                            context.fbProcessRuning = true
+                        }
+                    }
+                    url.contains("facebook.com/share")-> {
+                        val queryData = UrlHelper.getQueryData(url)
+                        val contentBuilder = ShareLinkContent.Builder()
+                        if(queryData.containsKey("u")){
+                            contentBuilder.setContentUrl(Uri.parse(queryData["u"]))
+                        }
+                        if(queryData.containsKey("quote")){
+                            contentBuilder.setQuote(queryData["quote"])
+                        }
+
+                        context.fbShareDialog?.show(contentBuilder.build())
+                        context.fbProcessRuning = true
+                    }else -> {
+                        getRedirectUrl(url)
+                        return super.shouldOverrideUrlLoading(view, url)
+                    }
                 }
 
                 return true
@@ -215,21 +247,54 @@ class Dialog(private val context: MainActivity) {
 
                     val url = view?.url ?: ""
 
-                    return if (url.contains("mailto:to") || url.contains("mailto:")) {
-                        openSite!!.openApp(url)
-                        removeMPopupView()
-                        true
-                    } else if (url.contains("whatsapp://send") || url.contains("fb-messenger") && popup != null) {
-                        openSite!!.openWhatsApp(url, popup!!)
-                        openSite!!.openMessenger(url)
-                        removeMPopupView()
-                        true
-                    } else if (url.contains("tg:msg_url")) {
-                        openSite!!.openApp(url)
-                        removeMPopupView()
-                        true
-                    }else {
-                        super.shouldOverrideUrlLoading(view, request)
+                    return when {
+                        (url.contains("mailto:to") || url.contains("mailto:")) -> {
+                            openSite!!.openApp(url)
+                            removeMPopupView()
+                            true
+                        }
+                        (url.contains("whatsapp://send") || url.contains("fb-messenger") && popup != null) -> {
+                            openSite!!.openWhatsApp(url, popup!!)
+                            openSite!!.openMessenger(url)
+                            removeMPopupView()
+                            true
+                        }
+                        (url.contains("tg:msg_url")) -> {
+                            openSite!!.openApp(url)
+                            removeMPopupView()
+                            true
+                        }
+                        url.contains("vuukle.com/login/auth/facebook") -> {
+                            if (!context.fbProcessRuning) {
+                                if (AccessToken.getCurrentAccessToken() != null) {
+                                    LoginManager.getInstance().logOut();
+                                }
+                                LoginManager.getInstance().logInWithReadPermissions(
+                                    context,
+                                    Arrays.asList("public_profile", "email")
+                                );
+                                context.fbProcessRuning = true
+                            }
+                            removeMPopupView()
+                            true
+                        }
+                        url.contains("facebook.com/share")-> {
+                            val queryData = UrlHelper.getQueryData(url)
+                            val contentBuilder = ShareLinkContent.Builder()
+                            if(queryData.containsKey("u")){
+                                contentBuilder.setContentUrl(Uri.parse(queryData["u"]))
+                            }
+                            if(queryData.containsKey("quote")){
+                                contentBuilder.setQuote(queryData["quote"])
+                            }
+                            context.fbShareDialog?.show(contentBuilder.build())
+                            context.fbProcessRuning = true
+                            removeMPopupView()
+                            true
+                        }
+                        else -> {
+                            super.shouldOverrideUrlLoading(view, request)
+                        }
                     }
                 }
             }
