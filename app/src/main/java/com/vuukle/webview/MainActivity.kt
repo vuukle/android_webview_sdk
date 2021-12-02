@@ -658,7 +658,7 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
                                 val cookieManager = CookieManager.getInstance()
                                 cookieManager.setAcceptCookie(true)
                                 val tokenCookie = "token=$it";
-                                cookieManager.setCookie(mWebViewComments?.url, tokenCookie)
+                                authManager.setAutorizationCookieForVuukle(urlManager, tokenCookie)
                                 mWebViewComments?.loadUrl(
                                     mWebViewComments!!.url ?: urlManager.getCommentsUrl()
                                 )

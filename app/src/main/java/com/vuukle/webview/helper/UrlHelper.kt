@@ -1,5 +1,6 @@
 package com.vuukle.webview.helper
 
+import java.net.MalformedURLException
 import java.net.URL
 import java.net.URLDecoder
 import java.util.LinkedHashMap
@@ -26,5 +27,14 @@ object UrlHelper {
         }
 
         return queryParams
+    }
+
+    fun getHostUrl(urlString: String): String {
+        return try {
+            val url = URL(urlString);
+            url.getProtocol() + "://" + url.getHost();
+        } catch (e: MalformedURLException) {
+            ""
+        }
     }
 }

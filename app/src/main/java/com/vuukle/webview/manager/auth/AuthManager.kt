@@ -1,6 +1,7 @@
 package com.vuukle.webview.manager.auth
 
 import android.util.Base64.DEFAULT
+import android.webkit.CookieManager
 import androidx.appcompat.app.AppCompatActivity
 import com.google.gson.Gson
 import com.google.gson.internal.LinkedTreeMap
@@ -10,6 +11,7 @@ import com.vuukle.webview.manager.network.ApiService
 import com.vuukle.webview.manager.network.BaseApiClient
 import kotlinx.coroutines.runBlocking
 import com.vuukle.webview.manager.storage.StorageImpl
+import com.vuukle.webview.manager.url.UrlManager
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
@@ -117,5 +119,15 @@ class AuthManager(activity: AppCompatActivity) {
         }
 
         return token
+    }
+
+    fun setAutorizationCookieForVuukle(urlManager: UrlManager, tokenCookie: String) {
+        val cookieManager = CookieManager.getInstance()
+        val urls = urlManager.getAllUrls()
+        if(urls.isNotEmpty()){
+            urls.forEach {
+                cookieManager.setCookie(it, tokenCookie)
+            }
+        }
     }
 }
