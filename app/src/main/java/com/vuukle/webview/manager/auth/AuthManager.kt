@@ -9,7 +9,7 @@ import com.vuukle.webview.manager.auth.model.AuthenticationModel
 import com.vuukle.webview.manager.network.ApiService
 import com.vuukle.webview.manager.network.BaseApiClient
 import kotlinx.coroutines.runBlocking
-import litparty.app.manager.storage.StorageImpl
+import com.vuukle.webview.manager.storage.StorageImpl
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
