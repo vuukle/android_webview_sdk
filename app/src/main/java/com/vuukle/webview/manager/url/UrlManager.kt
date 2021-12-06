@@ -1,6 +1,5 @@
 package com.vuukle.webview.manager.url
 
-import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import com.vuukle.webview.helper.UrlHelper
 import com.vuukle.webview.manager.auth.AuthManager

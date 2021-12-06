@@ -439,7 +439,8 @@ class MainActivity : AppCompatActivity(), ListenerModalWindow, PermissionListene
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 CookieManager.getInstance().setAcceptThirdPartyCookies(popup, true)
             };
-            popup!!.settings.userAgentString = popup!!.settings.userAgentString.replace("; wv", "")
+            popup!!.settings.userAgentString = System.getProperty("http.agent")
+                ?: "Mozilla/5.0 (Linux; Android 11) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.91 Mobile Safari/537.36"
             val urlLast = arrayOf("")
             popup!!.webViewClient = object : WebViewClient() {
 
